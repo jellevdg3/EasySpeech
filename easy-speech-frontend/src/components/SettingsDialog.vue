@@ -6,8 +6,7 @@
         <v-select
           :items="voices"
           label="Select Voice"
-          :value="localSelectedVoice"
-          @input="updateSelectedVoice"
+          v-model="localSelectedVoice"
         ></v-select>
       </v-card-text>
       <v-card-actions>
@@ -48,18 +47,20 @@ export default {
     },
     localDialog(newVal) {
       this.$emit('update:dialog', newVal);
+      if (newVal) {
+        this.localSelectedVoice = this.selectedVoice;
+      }
     },
     selectedVoice(newVal) {
       this.localSelectedVoice = newVal;
+    },
+    localSelectedVoice(newVal) {
+      this.$emit('update:selectedVoice', newVal);
     }
   },
   methods: {
     closeDialog() {
       this.localDialog = false;
-    },
-    updateSelectedVoice(value) {
-      this.localSelectedVoice = value;
-      this.$emit('update:selectedVoice', value);
     }
   }
 }

@@ -47,6 +47,7 @@ export default {
 <style scoped>
 .input-container {
   width: 100%;
+  max-width: 1024px;
   margin: 0 auto;
 }
 .v-textarea textarea {

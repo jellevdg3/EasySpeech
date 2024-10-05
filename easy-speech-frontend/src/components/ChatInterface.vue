@@ -21,6 +21,8 @@
 import MessageList from './MessageList.vue';
 import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
+import LocalDatabaseService from '../services/LocalDatabaseService.js';
+import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 
 export default {
   name: 'ChatInterface',
@@ -35,18 +37,23 @@ export default {
       newMessage: '',
       dialog: false,
       selectedVoice: '',
-      voices: [
-        'Voice 1',
-        'Voice 2',
-        'Voice 3',
-        'Voice 4',
-        'Voice 5',
-        'Voice 6',
-        'Voice 7',
-        'Voice 8',
-        'Voice 9',
-        'Voice 10'
-      ]
+      voices: []
+    }
+  },
+  mounted() {
+    this.voices = SpeechSynthesisService.getVoicesList();
+    const savedVoice = LocalDatabaseService.load('selectedVoice');
+    if (savedVoice) {
+      this.selectedVoice = savedVoice;
+    } else if (this.voices.length > 0) {
+      this.selectedVoice = this.voices[0];
+    } else {
+      this.selectedVoice = 'Standaard - Build in';
+    }
+  },
+  watch: {
+    selectedVoice(newVal) {
+      LocalDatabaseService.save('selectedVoice', newVal);
     }
   },
   methods: {
@@ -61,9 +68,7 @@ export default {
 
 <style scoped>
 .chat-container {
-  max-width: 1024px;
   width: 100%;
-  margin: 0 auto;
 }
 .input-area {
   padding: 16px;

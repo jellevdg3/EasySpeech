@@ -105,6 +105,8 @@ export default {
 <style scoped>
 .message-container {
   width: 100%;
+  max-width: 1024px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
 }
