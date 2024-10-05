@@ -1,5 +1,8 @@
 <template>
-  <div :class="alignment" class="message-container">
+  <div class="message-container">
+    <v-btn icon class="play-button" @click="speakMessage">
+      <v-icon>mdi-play</v-icon>
+    </v-btn>
     <v-card
       :color="cardColor"
       class="ma-2 message-card"
@@ -16,17 +19,21 @@ export default {
     message: {
       type: Object,
       required: true
+    },
+    index: {
+      type: Number,
+      required: true
     }
   },
   computed: {
-    alignment() {
-      return {
-        'text-right': this.message.sender === 'user',
-        'text-left': this.message.sender === 'bot'
-      };
-    },
     cardColor() {
-      return this.message.sender === 'user' ? 'blue lighten-5' : 'grey lighten-2';
+      return this.index % 2 === 0 ? 'green lighten-5' : 'yellow lighten-5';
+    }
+  },
+  methods: {
+    speakMessage() {
+      const utterance = new SpeechSynthesisUtterance(this.message.text);
+      speechSynthesis.speak(utterance);
     }
   }
 }
@@ -36,7 +43,10 @@ export default {
 .message-container {
   width: 100%;
   display: flex;
-  justify-content: center;
+  align-items: center;
+}
+.play-button {
+  margin-right: 8px;
 }
 .message-card {
   width: 100%;

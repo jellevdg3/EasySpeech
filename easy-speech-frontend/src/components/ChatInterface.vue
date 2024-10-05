@@ -17,9 +17,7 @@ export default {
   },
   data() {
     return {
-      messages: [
-        { sender: 'bot', text: 'Hello! How can I assist you today?' }
-      ],
+      messages: [],
       newMessage: ''
     }
   },
@@ -28,10 +26,6 @@ export default {
       if (this.newMessage.trim() === '') return;
       this.messages.push({ sender: 'user', text: this.newMessage });
       this.newMessage = '';
-      // Simulate bot response
-      setTimeout(() => {
-        this.messages.push({ sender: 'bot', text: 'This is a response from the bot.' });
-      }, 1000);
     }
   }
 }

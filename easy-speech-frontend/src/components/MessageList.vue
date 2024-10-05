@@ -4,6 +4,7 @@
       v-for="(message, index) in messages"
       :key="index"
       :message="message"
+      :index="index"
     />
   </div>
 </template>
