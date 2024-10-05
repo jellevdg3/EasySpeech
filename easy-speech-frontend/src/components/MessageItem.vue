@@ -2,7 +2,7 @@
   <div class="message-container">
     <v-btn icon class="play-button" @click="toggleSpeech">
       <transition name="icon-fade" mode="out-in">
-        <v-icon :key="isPlaying ? 'mdi-pause' : 'mdi-play'" >
+        <v-icon :key="isPlaying ? 'mdi-pause' : 'mdi-play'">
           {{ isPlaying ? 'mdi-pause' : 'mdi-play' }}
         </v-icon>
       </transition>
@@ -15,13 +15,13 @@
         <template v-for="(part, idx) in parts" :key="idx">
           <span
             v-if="part.type === 'sentence'"
-            :class="['sentence', { highlighted: highlightedIndex === idx }]"
-            @mouseenter="highlightSentence(idx)"
+            :class="['sentence', { highlighted: highlightedIndex === part.index }]"
+            @mouseenter="highlightSentence(part.index)"
             @mouseleave="unhighlightSentence"
-            @click="speakSentence(part.text)"
+            @click="speakFromSentence(part.index)"
           >{{ part.text }}</span>
           <span v-else-if="part.type === 'space'"> </span>
-          <br v-else />
+          <br v-else-if="part.type === 'newline'"/>
         </template>
       </v-card-text>
     </v-card>
@@ -45,7 +45,8 @@ export default {
     return {
       highlightedIndex: null,
       isPlaying: false,
-      currentUtterance: null
+      currentUtterance: null,
+      sentences: []
     }
   },
   computed: {
@@ -54,23 +55,31 @@ export default {
     },
     parts() {
       const lines = this.message.text.split('\n');
-      let result = [];
+      let partsResult = [];
+      let charIndex = 0;
+      let sentenceIdx = 0;
       lines.forEach((line, lineIdx) => {
-        const sentences = line.match(/[^.!?]+[.!?]*/g) || [];
-        sentences.forEach((sentence, sentenceIdx) => {
-          const trimmed = sentence.trim();
-          if (trimmed) {
-            result.push({ type: 'sentence', text: trimmed });
-            if (sentenceIdx < sentences.length - 1) {
-              result.push({ type: 'space' });
+        const sentences = line.match(/[^.!?]+[.!?]*\s*/g) || [];
+        sentences.forEach((sentence) => {
+          if (sentence) {
+            const hasTrailingSpace = sentence.endsWith(' ');
+            const trimmedSentence = hasTrailingSpace ? sentence.trimEnd() : sentence;
+            partsResult.push({ type: 'sentence', text: trimmedSentence, index: sentenceIdx, start: charIndex, end: charIndex + trimmedSentence.length });
+            this.sentences.push(trimmedSentence);
+            charIndex += sentence.length;
+            sentenceIdx++;
+            if (hasTrailingSpace) {
+              partsResult.push({ type: 'space' });
+              charIndex += 1;
             }
           }
         });
         if (lineIdx < lines.length - 1) {
-          result.push({ type: 'newline' });
+          partsResult.push({ type: 'newline' });
+          charIndex += 1;
         }
       });
-      return result;
+      return partsResult;
     }
   },
   methods: {
@@ -85,33 +94,59 @@ export default {
       if (speechSynthesis.speaking) {
         speechSynthesis.cancel();
       }
+      this.isPlaying = true;
+      this.highlightedIndex = null;
       this.currentUtterance = new SpeechSynthesisUtterance(this.message.text);
       this.currentUtterance.onstart = () => {
         this.isPlaying = true;
       };
+      this.currentUtterance.onboundary = (event) => {
+        if (event.name === 'word' || event.name === 'sentence') {
+          this.updateHighlightedSentence(event.charIndex);
+        }
+      };
       this.currentUtterance.onend = () => {
         this.isPlaying = false;
+        this.highlightedIndex = null;
       };
       this.currentUtterance.onerror = () => {
         this.isPlaying = false;
+        this.highlightedIndex = null;
       };
       speechSynthesis.speak(this.currentUtterance);
     },
-    speakSentence(sentence) {
+    speakFromSentence(startIdx) {
       if (speechSynthesis.speaking) {
         speechSynthesis.cancel();
       }
-      this.currentUtterance = new SpeechSynthesisUtterance(sentence);
-      this.currentUtterance.onstart = () => {
-        this.isPlaying = true;
+      this.isPlaying = true;
+      const playNext = (idx) => {
+        if (idx >= this.sentences.length) {
+          this.isPlaying = false;
+          this.highlightedIndex = null;
+          return;
+        }
+        this.highlightedIndex = idx;
+        const utterance = new SpeechSynthesisUtterance(this.sentences[idx]);
+        utterance.onend = () => {
+          playNext(idx + 1);
+        };
+        utterance.onerror = () => {
+          this.isPlaying = false;
+          this.highlightedIndex = null;
+        };
+        speechSynthesis.speak(utterance);
       };
-      this.currentUtterance.onend = () => {
-        this.isPlaying = false;
-      };
-      this.currentUtterance.onerror = () => {
-        this.isPlaying = false;
-      };
-      speechSynthesis.speak(this.currentUtterance);
+      playNext(startIdx);
+    },
+    updateHighlightedSentence(charIndex) {
+      for (let part of this.parts) {
+        if (part.type === 'sentence' && charIndex >= part.start && charIndex < part.end) {
+          this.highlightedIndex = part.index;
+          return;
+        }
+      }
+      this.highlightedIndex = null;
     },
     highlightSentence(idx) {
       this.highlightedIndex = idx;
