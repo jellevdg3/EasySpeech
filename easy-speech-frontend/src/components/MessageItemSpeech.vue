@@ -43,38 +43,8 @@ export default {
       if (this.isPlaying) {
         this.cancelSpeech();
       } else {
-        this.speakMessage();
+        this.speakFromSentence(0);
       }
-    },
-    speakMessage() {
-      if (speechSynthesis.speaking) {
-        SpeechSynthesisService.cancelSpeech();
-      }
-      this.isPlaying = true;
-      this.$emit('toggle-speech', this.isPlaying);
-      this.$emit('highlight', null);
-      const guid = GuidUtils.generateGuid();
-      this.activeGuid = guid;
-      const onBoundary = (event) => {
-        if (event.name === 'word' || event.name === 'sentence') {
-          this.updatePlayingHighlight(event.charIndex);
-        }
-      };
-      const onEnd = () => {
-        if (this.activeGuid === guid) {
-          this.isPlaying = false;
-          this.$emit('toggle-speech', this.isPlaying);
-          this.$emit('highlight', null);
-        }
-      };
-      const onError = () => {
-        if (this.activeGuid === guid) {
-          this.isPlaying = false;
-          this.$emit('toggle-speech', this.isPlaying);
-          this.$emit('highlight', null);
-        }
-      };
-      SpeechSynthesisService.speakText(this.message.text, onBoundary, onEnd, onError);
     },
     speakFromSentence(startIdx) {
       if (speechSynthesis.speaking) {
@@ -109,15 +79,6 @@ export default {
         SpeechSynthesisService.speakText(this.sentences[idx], null, onEnd, onError);
       };
       playNext(startIdx);
-    },
-    updatePlayingHighlight(charIndex) {
-      for (let part of this.splitResult.parts) {
-        if (part.type === 'sentence' && charIndex >= part.start && charIndex < part.end) {
-          this.$emit('highlight', part.index);
-          return;
-        }
-      }
-      this.$emit('highlight', null);
     },
     cancelSpeech() {
       SpeechSynthesisService.cancelSpeech();

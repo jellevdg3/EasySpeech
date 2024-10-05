@@ -47,8 +47,8 @@ export default {
     },
     localDialog(newVal) {
       this.$emit('update:dialog', newVal);
-      if (newVal) {
-        this.localSelectedVoice = this.selectedVoice;
+      if (!newVal) {
+        this.$emit('update:selectedVoice', this.localSelectedVoice);
       }
     },
     selectedVoice(newVal) {
