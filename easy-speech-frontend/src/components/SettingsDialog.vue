@@ -1,5 +1,5 @@
 <template>
-  <v-dialog :value="dialog" max-width="400" @input="updateDialog">
+  <v-dialog v-model="localDialog" max-width="400">
     <v-card>
       <v-card-title>Settings</v-card-title>
       <v-card-text>
@@ -32,25 +32,30 @@ export default {
     },
     selectedVoice: {
       type: String,
-      required: true
+      required: false,
+      default: null
     }
   },
   data() {
     return {
+      localDialog: this.dialog,
       localSelectedVoice: this.selectedVoice
     }
   },
   watch: {
+    dialog(newVal) {
+      this.localDialog = newVal;
+    },
+    localDialog(newVal) {
+      this.$emit('update:dialog', newVal);
+    },
     selectedVoice(newVal) {
       this.localSelectedVoice = newVal;
     }
   },
   methods: {
-    updateDialog(value) {
-      this.$emit('update:dialog', value);
-    },
     closeDialog() {
-      this.$emit('update:dialog', false);
+      this.localDialog = false;
     },
     updateSelectedVoice(value) {
       this.localSelectedVoice = value;

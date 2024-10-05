@@ -34,7 +34,7 @@ export default {
       messages: [],
       newMessage: '',
       dialog: false,
-      selectedVoice: null,
+      selectedVoice: '',
       voices: [
         'Voice 1',
         'Voice 2',

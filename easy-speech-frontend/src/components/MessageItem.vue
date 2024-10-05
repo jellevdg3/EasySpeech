@@ -1,12 +1,13 @@
 <template>
   <div class="message-container">
-    <v-btn icon class="play-button" @click="toggleSpeech">
-      <transition name="icon-fade" mode="out-in">
-        <v-icon :key="isPlaying ? 'mdi-pause' : 'mdi-play'">
-          {{ isPlaying ? 'mdi-pause' : 'mdi-play' }}
-        </v-icon>
-      </transition>
-    </v-btn>
+    <MessageItemSpeech
+      ref="speech"
+      :message="message"
+      :index="index"
+      @toggle-speech="handleToggleSpeech"
+      @highlight="handleHighlight"
+      @unhighlight="handleUnhighlight"
+    />
     <v-card
       :color="cardColor"
       class="ma-2 message-card"
@@ -36,10 +37,13 @@
 
 <script>
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
-import GuidUtils from '../utils/GuidUtils.js';
+import MessageItemSpeech from './MessageItemSpeech.vue';
 
 export default {
   name: 'MessageItem',
+  components: {
+    MessageItemSpeech
+  },
   props: {
     message: {
       type: Object,
@@ -53,9 +57,7 @@ export default {
   data() {
     return {
       hoverHighlightIndex: null,
-      playingHighlightIndex: null,
-      isPlaying: false,
-      activeGuid: null
+      playingHighlightIndex: null
     }
   },
   computed: {
@@ -73,79 +75,13 @@ export default {
     }
   },
   methods: {
-    toggleSpeech() {
-      if (this.isPlaying) {
-        SpeechSynthesisService.cancelSpeech();
-        this.isPlaying = false;
-      } else {
-        this.speakMessage();
-      }
+    handleToggleSpeech(isPlaying) {
+      this.isPlaying = isPlaying;
     },
-    speakMessage() {
-      if (speechSynthesis.speaking) {
-        SpeechSynthesisService.cancelSpeech();
-      }
-      this.isPlaying = true;
-      this.playingHighlightIndex = null;
-      const guid = GuidUtils.generateGuid();
-      this.activeGuid = guid;
-      const onBoundary = (event) => {
-        if (event.name === 'word' || event.name === 'sentence') {
-          this.updatePlayingHighlight(event.charIndex);
-        }
-      };
-      const onEnd = () => {
-        if (this.activeGuid === guid) {
-          this.isPlaying = false;
-          this.playingHighlightIndex = null;
-        }
-      };
-      const onError = () => {
-        if (this.activeGuid === guid) {
-          this.isPlaying = false;
-          this.playingHighlightIndex = null;
-        }
-      };
-      SpeechSynthesisService.speakText(this.message.text, onBoundary, onEnd, onError);
+    handleHighlight(idx) {
+      this.playingHighlightIndex = idx;
     },
-    speakFromSentence(startIdx) {
-      if (speechSynthesis.speaking) {
-        SpeechSynthesisService.cancelSpeech();
-      }
-      this.isPlaying = true;
-      const guid = GuidUtils.generateGuid();
-      this.activeGuid = guid;
-      const playNext = (idx) => {
-        if (idx >= this.sentences.length) {
-          if (this.activeGuid === guid) {
-            this.isPlaying = false;
-            this.playingHighlightIndex = null;
-          }
-          return;
-        }
-        this.playingHighlightIndex = idx;
-        const onEnd = () => {
-          if (this.activeGuid === guid) {
-            playNext(idx + 1);
-          }
-        };
-        const onError = () => {
-          if (this.activeGuid === guid) {
-            this.isPlaying = false;
-            this.playingHighlightIndex = null;
-          }
-        };
-        SpeechSynthesisService.speakText(this.sentences[idx], null, onEnd, onError);
-      };
-      playNext(startIdx);
-    },
-    updatePlayingHighlight(charIndex) {
-      for (let part of this.parts) {
-        if (part.type === 'sentence' && charIndex >= part.start && charIndex < part.end) {
-          this.playingHighlightIndex = part.index;
-          return;
-        }
-      }
+    handleUnhighlight() {
       this.playingHighlightIndex = null;
     },
     highlightSentence(idx) {
@@ -153,11 +89,14 @@ export default {
     },
     unhighlightSentence() {
       this.hoverHighlightIndex = null;
+    },
+    speakFromSentence(startIdx) {
+      this.$refs.speech.speakFromSentence(startIdx);
     }
   },
   beforeUnmount() {
-    if (speechSynthesis.speaking) {
-      SpeechSynthesisService.cancelSpeech();
+    if (this.$refs.speech) {
+      this.$refs.speech.cancelSpeech();
     }
   }
 }
@@ -168,9 +107,6 @@ export default {
   width: 100%;
   display: flex;
   align-items: center;
-}
-.play-button {
-  margin-right: 8px;
 }
 .message-card {
   width: 100%;
@@ -192,11 +128,5 @@ export default {
 }
 .playing-highlight {
   background-color: #FFFFFF;
-}
-.icon-fade-enter-active, .icon-fade-leave-active {
-  transition: opacity 0.3s;
-}
-.icon-fade-enter-from, .icon-fade-leave-to {
-  opacity: 0;
 }
 </style>
