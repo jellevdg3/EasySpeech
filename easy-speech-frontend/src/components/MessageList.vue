@@ -1,5 +1,5 @@
 <template>
-  <div class="messages d-flex flex-column align-center p-4">
+  <div ref="messagesContainer" class="messages d-flex flex-column align-start p-4" style="height: 100%;">
     <MessageItem
       v-for="(message, index) in messages"
       :key="index"
@@ -21,6 +21,19 @@ export default {
     messages: {
       type: Array,
       required: true
+    }
+  },
+  watch: {
+    messages: {
+      handler() {
+        this.$nextTick(() => {
+          this.$refs.messagesContainer.scrollTo({
+            top: this.$refs.messagesContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+        });
+      },
+      deep: true
     }
   }
 }
