@@ -1,4 +1,3 @@
-// File: src/main.js
 import { createApp } from 'vue';
 import VueCookies from 'vue-cookies';
 import App from './App.vue';
@@ -7,12 +6,13 @@ import 'vuetify/styles';
 import '@mdi/font/css/materialdesignicons.css';
 import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
+import './style.css';
 
 const vuetify = createVuetify({
 	components,
 	directives,
 	icons: {
-		iconfont: 'mdi', // default - only for display purposes
+		iconfont: 'mdi',
 	},
 	theme: {
 		defaultTheme: 'customDark',

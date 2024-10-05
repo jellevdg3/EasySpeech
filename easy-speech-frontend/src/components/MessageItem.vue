@@ -15,7 +15,13 @@
         <template v-for="(part, idx) in parts" :key="idx">
           <span
             v-if="part.type === 'sentence'"
-            :class="['sentence', { highlighted: highlightedIndex === part.index }]"
+            :class="[
+              'sentence', 
+              { 
+                'hover-highlight': hoverHighlightIndex === part.index, 
+                'playing-highlight': playingHighlightIndex === part.index 
+              }
+            ]"
             @mouseenter="highlightSentence(part.index)"
             @mouseleave="unhighlightSentence"
             @click="speakFromSentence(part.index)"
@@ -29,6 +35,9 @@
 </template>
 
 <script>
+import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
+import GuidUtils from '../utils/GuidUtils.js';
+
 export default {
   name: 'MessageItem',
   props: {
@@ -43,121 +52,112 @@ export default {
   },
   data() {
     return {
-      highlightedIndex: null,
+      hoverHighlightIndex: null,
+      playingHighlightIndex: null,
       isPlaying: false,
-      currentUtterance: null,
-      sentences: []
+      activeGuid: null
     }
   },
   computed: {
     cardColor() {
-      return this.index % 2 === 0 ? 'green lighten-5' : 'yellow lighten-5';
+      return this.index % 2 === 0 ? '#d4ebf2' : '#add8e6';
+    },
+    splitResult() {
+      return SpeechSynthesisService.splitIntoParts(this.message.text);
     },
     parts() {
-      const lines = this.message.text.split('\n');
-      let partsResult = [];
-      let charIndex = 0;
-      let sentenceIdx = 0;
-      lines.forEach((line, lineIdx) => {
-        const sentences = line.match(/[^.!?]+[.!?]*\s*/g) || [];
-        sentences.forEach((sentence) => {
-          if (sentence) {
-            const hasTrailingSpace = sentence.endsWith(' ');
-            const trimmedSentence = hasTrailingSpace ? sentence.trimEnd() : sentence;
-            partsResult.push({ type: 'sentence', text: trimmedSentence, index: sentenceIdx, start: charIndex, end: charIndex + trimmedSentence.length });
-            this.sentences.push(trimmedSentence);
-            charIndex += sentence.length;
-            sentenceIdx++;
-            if (hasTrailingSpace) {
-              partsResult.push({ type: 'space' });
-              charIndex += 1;
-            }
-          }
-        });
-        if (lineIdx < lines.length - 1) {
-          partsResult.push({ type: 'newline' });
-          charIndex += 1;
-        }
-      });
-      return partsResult;
+      return this.splitResult.parts;
+    },
+    sentences() {
+      return this.splitResult.sentences;
     }
   },
   methods: {
     toggleSpeech() {
       if (this.isPlaying) {
-        speechSynthesis.cancel();
+        SpeechSynthesisService.cancelSpeech();
+        this.isPlaying = false;
       } else {
         this.speakMessage();
       }
     },
     speakMessage() {
       if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+        SpeechSynthesisService.cancelSpeech();
       }
       this.isPlaying = true;
-      this.highlightedIndex = null;
-      this.currentUtterance = new SpeechSynthesisUtterance(this.message.text);
-      this.currentUtterance.onstart = () => {
-        this.isPlaying = true;
-      };
-      this.currentUtterance.onboundary = (event) => {
+      this.playingHighlightIndex = null;
+      const guid = GuidUtils.generateGuid();
+      this.activeGuid = guid;
+      const onBoundary = (event) => {
         if (event.name === 'word' || event.name === 'sentence') {
-          this.updateHighlightedSentence(event.charIndex);
+          this.updatePlayingHighlight(event.charIndex);
         }
       };
-      this.currentUtterance.onend = () => {
-        this.isPlaying = false;
-        this.highlightedIndex = null;
+      const onEnd = () => {
+        if (this.activeGuid === guid) {
+          this.isPlaying = false;
+          this.playingHighlightIndex = null;
+        }
       };
-      this.currentUtterance.onerror = () => {
-        this.isPlaying = false;
-        this.highlightedIndex = null;
+      const onError = () => {
+        if (this.activeGuid === guid) {
+          this.isPlaying = false;
+          this.playingHighlightIndex = null;
+        }
       };
-      speechSynthesis.speak(this.currentUtterance);
+      SpeechSynthesisService.speakText(this.message.text, onBoundary, onEnd, onError);
     },
     speakFromSentence(startIdx) {
       if (speechSynthesis.speaking) {
-        speechSynthesis.cancel();
+        SpeechSynthesisService.cancelSpeech();
       }
       this.isPlaying = true;
+      const guid = GuidUtils.generateGuid();
+      this.activeGuid = guid;
       const playNext = (idx) => {
         if (idx >= this.sentences.length) {
-          this.isPlaying = false;
-          this.highlightedIndex = null;
+          if (this.activeGuid === guid) {
+            this.isPlaying = false;
+            this.playingHighlightIndex = null;
+          }
           return;
         }
-        this.highlightedIndex = idx;
-        const utterance = new SpeechSynthesisUtterance(this.sentences[idx]);
-        utterance.onend = () => {
-          playNext(idx + 1);
+        this.playingHighlightIndex = idx;
+        const onEnd = () => {
+          if (this.activeGuid === guid) {
+            playNext(idx + 1);
+          }
         };
-        utterance.onerror = () => {
-          this.isPlaying = false;
-          this.highlightedIndex = null;
+        const onError = () => {
+          if (this.activeGuid === guid) {
+            this.isPlaying = false;
+            this.playingHighlightIndex = null;
+          }
         };
-        speechSynthesis.speak(utterance);
+        SpeechSynthesisService.speakText(this.sentences[idx], null, onEnd, onError);
       };
       playNext(startIdx);
     },
-    updateHighlightedSentence(charIndex) {
+    updatePlayingHighlight(charIndex) {
       for (let part of this.parts) {
         if (part.type === 'sentence' && charIndex >= part.start && charIndex < part.end) {
-          this.highlightedIndex = part.index;
+          this.playingHighlightIndex = part.index;
           return;
         }
       }
-      this.highlightedIndex = null;
+      this.playingHighlightIndex = null;
     },
     highlightSentence(idx) {
-      this.highlightedIndex = idx;
+      this.hoverHighlightIndex = idx;
     },
     unhighlightSentence() {
-      this.highlightedIndex = null;
+      this.hoverHighlightIndex = null;
     }
   },
   beforeUnmount() {
     if (speechSynthesis.speaking) {
-      speechSynthesis.cancel();
+      SpeechSynthesisService.cancelSpeech();
     }
   }
 }
@@ -174,6 +174,7 @@ export default {
 }
 .message-card {
   width: 100%;
+  color: black;
 }
 .message-text {
   white-space: pre-wrap;
@@ -181,12 +182,16 @@ export default {
 .sentence {
   cursor: pointer;
   transition: background-color 0.3s;
+  color: black;
 }
 .sentence:hover {
-  background-color: #d3d3d3;
+  background-color: #FFFFFF;
 }
-.highlighted {
-  background-color: #b3b3b3;
+.hover-highlight {
+  background-color: #FFFFFF;
+}
+.playing-highlight {
+  background-color: #FFFFFF;
 }
 .icon-fade-enter-active, .icon-fade-leave-active {
   transition: opacity 0.3s;
