@@ -7,12 +7,12 @@ const remoteVoices = [
 	{ displayName: 'Fenna - Azure', actualName: 'nl-NL-FennaNeural' },
 	{ displayName: 'Maarten - Azure', actualName: 'nl-NL-MaartenNeural' },
 	{ displayName: 'Colette - Azure', actualName: 'nl-NL-ColetteNeural' },
-	{ displayName: 'Alloy - OpenAI', actualName: 'nl-NL-AlloyMultilingualNeural' },
-	{ displayName: 'Echo - OpenAI', actualName: 'nl-NL-EchoMultilingualNeural' },
-	{ displayName: 'Fable - OpenAI', actualName: 'nl-NL-FableMultilingualNeural' },
-	{ displayName: 'Onyx - OpenAI', actualName: 'nl-NL-OnyxMultilingualNeural' },
-	{ displayName: 'Nova - OpenAI', actualName: 'nl-NL-NovaMultilingualNeural' },
-	{ displayName: 'Shimmer - OpenAI', actualName: 'nl-NL-ShimmerMultilingualNeural' }
+	{ displayName: 'Alloy - OpenAI', actualName: 'en-US-AlloyTurboMultilingualNeural' },
+	{ displayName: 'Echo - OpenAI', actualName: 'en-US-EchoTurboMultilingualNeural' },
+	{ displayName: 'Fable - OpenAI', actualName: 'en-US-FableTurboMultilingualNeural' },
+	{ displayName: 'Onyx - OpenAI', actualName: 'en-US-OnyxTurboMultilingualNeural' },
+	{ displayName: 'Nova - OpenAI', actualName: 'en-US-NovaTurboMultilingualNeural' },
+	{ displayName: 'Shimmer - OpenAI', actualName: 'en-US-ShimmerTurboMultilingualNeural' }
 ];
 
 class SpeechSynthesisService {
