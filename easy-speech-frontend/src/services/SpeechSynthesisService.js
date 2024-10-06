@@ -4,15 +4,26 @@ import LocalDatabaseService from './LocalDatabaseService.js';
 
 const localBuildInVoice = "Local - Build in";
 const remoteVoices = [
-	{ displayName: 'Fenna - Azure', actualName: 'nl-NL-FennaNeural' },
-	{ displayName: 'Maarten - Azure', actualName: 'nl-NL-MaartenNeural' },
-	{ displayName: 'Colette - Azure', actualName: 'nl-NL-ColetteNeural' },
+	{ displayName: 'Fenna (NL) - Azure', actualName: 'nl-NL-FennaNeural' },
+	{ displayName: 'Maarten (NL) - Azure', actualName: 'nl-NL-MaartenNeural' },
+	{ displayName: 'Colette (NL) - Azure', actualName: 'nl-NL-ColetteNeural' },
+
+	{ displayName: 'Ava - Azure', actualName: 'en-US-AvaMultilingualNeural' },
+	{ displayName: 'Andrew - Azure', actualName: 'en-US-AndrewMultilingualNeural' },
+	{ displayName: 'Emma - Azure', actualName: 'en-US-EmmaMultilingualNeural' },
+	{ displayName: 'Brian - Azure', actualName: 'en-US-BrianMultilingualNeural' },
+	{ displayName: 'Jenny - Azure', actualName: 'en-US-JennyMultilingualNeural' },
+	{ displayName: 'Ryan - Azure', actualName: 'en-US-RyanMultilingualNeural' },
+	{ displayName: 'Adam - Azure', actualName: 'en-US-AdamMultilingualNeural' },
+	{ displayName: 'Amanda - Azure', actualName: 'en-US-AmandaMultilingualNeural' },
+	{ displayName: 'Brandon - Azure', actualName: 'en-US-BrandonMultilingualNeural' },
+	{ displayName: 'Christopher - Azure', actualName: 'en-US-ChristopherMultilingualNeural' },
+	{ displayName: 'Cora - Azure', actualName: 'en-US-CoraMultilingualNeural' },
+	{ displayName: 'Davis - Azure', actualName: 'en-US-DavisMultilingualNeural' },
+	{ displayName: 'Derek - Azure', actualName: 'en-US-DerekMultilingualNeural' },
+
 	{ displayName: 'Alloy - OpenAI', actualName: 'en-US-AlloyTurboMultilingualNeural' },
-	{ displayName: 'Echo - OpenAI', actualName: 'en-US-EchoTurboMultilingualNeural' },
-	{ displayName: 'Fable - OpenAI', actualName: 'en-US-FableTurboMultilingualNeural' },
-	{ displayName: 'Onyx - OpenAI', actualName: 'en-US-OnyxTurboMultilingualNeural' },
 	{ displayName: 'Nova - OpenAI', actualName: 'en-US-NovaTurboMultilingualNeural' },
-	{ displayName: 'Shimmer - OpenAI', actualName: 'en-US-ShimmerTurboMultilingualNeural' }
 ];
 
 class SpeechSynthesisService {
