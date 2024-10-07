@@ -7,7 +7,6 @@ const remoteVoices = [
 	{ displayName: 'Fenna (NL) - Azure', actualName: 'nl-NL-FennaNeural' },
 	{ displayName: 'Maarten (NL) - Azure', actualName: 'nl-NL-MaartenNeural' },
 	{ displayName: 'Colette (NL) - Azure', actualName: 'nl-NL-ColetteNeural' },
-
 	{ displayName: 'Ava - Azure', actualName: 'en-US-AvaMultilingualNeural' },
 	{ displayName: 'Andrew - Azure', actualName: 'en-US-AndrewMultilingualNeural' },
 	{ displayName: 'Emma - Azure', actualName: 'en-US-EmmaMultilingualNeural' },
@@ -21,7 +20,6 @@ const remoteVoices = [
 	{ displayName: 'Cora - Azure', actualName: 'en-US-CoraMultilingualNeural' },
 	{ displayName: 'Davis - Azure', actualName: 'en-US-DavisMultilingualNeural' },
 	{ displayName: 'Derek - Azure', actualName: 'en-US-DerekMultilingualNeural' },
-
 	{ displayName: 'Alloy - OpenAI', actualName: 'en-US-AlloyTurboMultilingualNeural' },
 	{ displayName: 'Nova - OpenAI', actualName: 'en-US-NovaTurboMultilingualNeural' },
 ];
@@ -48,9 +46,21 @@ class SpeechSynthesisService {
 		}
 	}
 
+	async preloadText(text) {
+		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
+		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
+		if (remoteVoice) {
+			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text);
+		}
+	}
+
 	cancelSpeech() {
 		this.localSynthesiser.cancelSpeech();
 		this.remoteSynthesiser.cancelSpeech();
+	}
+
+	clearCache() {
+		this.remoteSynthesiser.clearCache();
 	}
 
 	splitIntoParts(text) {

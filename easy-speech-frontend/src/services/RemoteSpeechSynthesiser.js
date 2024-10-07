@@ -2,9 +2,14 @@ class RemoteSpeechSynthesiser {
 	constructor() {
 		this.audio = null;
 		this.isPlaying = false;
+		this.audioCache = new Map();
 	}
 
-	async speakText(voiceName, text, onEnd, onError) {
+	async preloadText(voiceName, text) {
+		const cacheKey = `${voiceName}:${text}`;
+		if (this.audioCache.has(cacheKey)) {
+			return;
+		}
 		try {
 			const response = await fetch('http://localhost:3000/voices/generate', {
 				method: 'POST',
@@ -18,14 +23,39 @@ class RemoteSpeechSynthesiser {
 			}
 			const blob = await response.blob();
 			const url = URL.createObjectURL(blob);
-			this.audio = new Audio(url);
-			this.audio.onended = onEnd;
-			this.audio.onerror = onError;
-			this.audio.play();
-			this.isPlaying = true;
+			const audio = new Audio(url);
+			this.audioCache.set(cacheKey, audio);
 		} catch (error) {
-			onError(error);
+			console.error('Error preloading text:', error);
 		}
+	}
+
+	async speakText(voiceName, text, onEnd, onError) {
+		const cacheKey = `${voiceName}:${text}`;
+		let audio = this.audioCache.get(cacheKey);
+		if (!audio) {
+			try {
+				await this.preloadText(voiceName, text);
+				audio = this.audioCache.get(cacheKey);
+			} catch (error) {
+				onError(error);
+				return;
+			}
+		}
+		if (!audio) {
+			onError(new Error('Failed to load audio'));
+			return;
+		}
+		if (this.audio && this.isPlaying) {
+			this.audio.pause();
+			this.audio.currentTime = 0;
+			this.isPlaying = false;
+		}
+		this.audio = audio;
+		this.audio.onended = onEnd;
+		this.audio.onerror = onError;
+		this.audio.play();
+		this.isPlaying = true;
 	}
 
 	cancelSpeech() {
@@ -34,6 +64,15 @@ class RemoteSpeechSynthesiser {
 			this.audio.currentTime = 0;
 			this.isPlaying = false;
 		}
+		this.audio = null;
+	}
+
+	clearCache() {
+		this.audioCache.forEach((audio) => {
+			audio.pause();
+			audio.currentTime = 0;
+		});
+		this.audioCache.clear();
 	}
 }
 

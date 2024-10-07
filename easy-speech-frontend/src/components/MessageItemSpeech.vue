@@ -27,7 +27,9 @@ export default {
   data() {
     return {
       isPlaying: false,
-      activeGuid: null
+      activeGuid: null,
+      preloadedSentences: {},
+      maxQueueSize: 1
     }
   },
   computed: {
@@ -50,22 +52,28 @@ export default {
       if (speechSynthesis.speaking) {
         SpeechSynthesisService.cancelSpeech();
       }
+
+      this.maxQueueSize = 1;
       this.isPlaying = true;
       this.$emit('toggle-speech', this.isPlaying);
       const guid = GuidUtils.generateGuid();
       this.activeGuid = guid;
+
       const playNext = (idx) => {
         if (idx >= this.sentences.length) {
           if (this.activeGuid === guid) {
             this.isPlaying = false;
             this.$emit('toggle-speech', this.isPlaying);
             this.$emit('highlight', null);
+            this.preloadedSentences = {};
           }
           return;
         }
         this.$emit('highlight', idx);
+
         const onEnd = () => {
           if (this.activeGuid === guid) {
+            this.preloadSentences(idx + 2);
             playNext(idx + 1);
           }
         };
@@ -74,17 +82,36 @@ export default {
             this.isPlaying = false;
             this.$emit('toggle-speech', this.isPlaying);
             this.$emit('highlight', null);
+            this.preloadedSentences = {};
           }
         };
         SpeechSynthesisService.speakText(this.sentences[idx], null, onEnd, onError);
+		this.preloadSentences(startIdx + 1);
+
+        if (Object.keys(this.preloadedSentences).length > this.maxQueueSize) {
+          const keys = Object.keys(this.preloadedSentences).map(Number);
+          const minIdx = Math.min(...keys);
+          delete this.preloadedSentences[minIdx];
+        }
       };
       playNext(startIdx);
     },
+    preloadSentences(startIdx) {
+      const endIdx = Math.min(startIdx + this.maxQueueSize, this.sentences.length);
+      for (let idx = startIdx; idx < endIdx; idx++) {
+        if (!this.preloadedSentences[idx]) {
+          SpeechSynthesisService.preloadText(this.sentences[idx]);
+          this.preloadedSentences[idx] = true;
+        }
+      }
+    },
     cancelSpeech() {
       SpeechSynthesisService.cancelSpeech();
+      SpeechSynthesisService.clearCache();
       this.isPlaying = false;
       this.$emit('toggle-speech', this.isPlaying);
       this.$emit('highlight', null);
+      this.preloadedSentences = {};
     }
   },
   beforeUnmount() {
