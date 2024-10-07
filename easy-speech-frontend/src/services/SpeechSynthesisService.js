@@ -28,6 +28,11 @@ class SpeechSynthesisService {
 	constructor() {
 		this.localSynthesiser = new LocalSpeechSynthesiser();
 		this.remoteSynthesiser = new RemoteSpeechSynthesiser();
+		this.language = 'Nederlands'; // Default language
+	}
+
+	setLanguage(language) {
+		this.language = language;
 	}
 
 	async getVoicesList() {
@@ -40,7 +45,7 @@ class SpeechSynthesisService {
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.speakText(remoteVoice.actualName, text, onEnd, onError);
+			await this.remoteSynthesiser.speakText(remoteVoice.actualName, text, this.language, onEnd, onError);
 		} else {
 			await this.localSynthesiser.speakText(text, onBoundary, onEnd, onError);
 		}
@@ -50,7 +55,7 @@ class SpeechSynthesisService {
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text);
+			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text, this.language);
 		}
 	}
 

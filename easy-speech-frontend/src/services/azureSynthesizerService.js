@@ -38,23 +38,21 @@ class azureSynthesizerService {
 		return this.languageMap[languageName];
 	}
 
-	async generateVoice(voice, text, language, speed = '0%') { // Default speed is normal
+	async generateVoice(voice, text, language) {
 		const langCode = this.getLanguageCode(language);
 		if (!langCode) {
 			throw new Error(`Unsupported language: ${language}`);
 		}
 
-		return synthesizerCacheService.getOrSet(this.serviceName, voice, language, text, speed, async () => {
+		return synthesizerCacheService.getOrSet(this.serviceName, voice, language, text, async () => {
 			console.log(langCode);
 			const ssml = `
-                <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langCode}'>
-                    <voice name='${voice}' xml:lang='${langCode}'>
-                        <prosody rate='${speed}'>
-                            ${this.escapeXml(text)}
-                        </prosody>
-                    </voice>
-                </speak>`;
-			console.log('Generate text:', text, 'with voice:', voice, 'language:', language, 'speed:', speed);
+				<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langCode}'>
+					<voice name='${voice}' xml:lang='${langCode}'>
+						${this.escapeXml(text)}
+					</voice>
+				</speak>`;
+			console.log('Generate text:', text, 'with voice:', voice, 'and language:', language);
 			const response = await fetch(this.ttsEndpoint, {
 				method: 'POST',
 				headers: {

@@ -5,14 +5,14 @@ class SynthesizerCacheService {
 		this.cache = new Map();
 	}
 
-	generateKey(serviceName, voice, text) {
+	generateKey(serviceName, voice, language, text, speed) {
 		const hash = crypto.createHash('sha256');
-		hash.update(serviceName + voice + text);
+		hash.update(serviceName + voice + language + text + speed);
 		return hash.digest('hex');
 	}
 
-	async getOrSet(serviceName, voice, text, generateFunction) {
-		const key = this.generateKey(serviceName, voice, text);
+	async getOrSet(serviceName, voice, language, text, speed, generateFunction) {
+		const key = this.generateKey(serviceName, voice, language, text, speed);
 		if (this.cache.has(key)) {
 			return this.cache.get(key);
 		}

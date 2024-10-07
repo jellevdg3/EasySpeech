@@ -9,17 +9,14 @@ app.use(express.json());
 app.use(cors());
 
 app.post('/voices/generate', async (req, res) => {
-	const { voice, text } = req.body;
+	const { voice, text, language, speed } = req.body;
 
-	//console.log('Received /voices/generate request with body:', req.body);
-
-	if (!voice || !text) {
-		console.warn('Missing "voice" or "text" in request body.');
-		return res.status(400).json({ error: 'Missing "voice" or "text" in request body.' });
+	if (!voice || !text || !language) {
+		return res.status(400).json({ error: 'Missing "voice", "text", or "language" in request body.' });
 	}
 
 	try {
-		const audioBuffer = await azureSynthesizerService.generateVoice(voice, text);
+		const audioBuffer = await azureSynthesizerService.generateVoice(voice, text, language, speed ?? '0%');
 		res.set({
 			'Content-Type': 'audio/wav',
 			'Content-Disposition': 'attachment; filename="speech.wav"'
