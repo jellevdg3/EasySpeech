@@ -69,7 +69,7 @@ export default {
 					}
 					return;
 				}
-				this.$emit('highlight', idx);
+				this.$emit('highlight', { messageIndex: this.index, partIndex: idx });
 
 				const onEnd = () => {
 					if (this.activeGuid === guid) {
@@ -99,6 +99,33 @@ export default {
 				}
 			};
 			playNext(startIdx);
+		},
+		speakSingleSentence(index) {
+			this.cancelSpeech();
+			this.isPlaying = true;
+			this.$emit('toggle-speech', this.isPlaying);
+			const guid = GuidUtils.generateGuid();
+			this.activeGuid = guid;
+
+			const onEnd = () => {
+				if (this.activeGuid === guid) {
+					this.isPlaying = false;
+					this.$emit('toggle-speech', this.isPlaying);
+					this.$emit('highlight', null);
+				}
+			};
+
+			const onError = () => {
+				if (this.activeGuid === guid) {
+					this.isPlaying = false;
+					this.$emit('toggle-speech', this.isPlaying);
+					this.$emit('highlight', null);
+				}
+			};
+
+			const sentence = this.sentences[index];
+			SpeechSynthesisService.speakText(sentence, null, onEnd, onError);
+			this.$emit('highlight', { messageIndex: this.index, partIndex: index });
 		},
 		preloadSentences(startIdx) {
 			const endIdx = Math.min(startIdx + this.maxQueueSize, this.sentences.length);

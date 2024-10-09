@@ -1,8 +1,8 @@
 <template>
-	<div ref="messagesContainer" class="messages d-flex flex-column align-start p-4">
-		<MessageItem v-for="(message, index) in messages" :key="index" ref="messageItems" :message="message"
-			:index="index" @edit="handleEdit(index, $event)" @delete="handleDelete(index, $event)"
-			@highlight="handleHighlight" @speech-started="handleSpeechStarted" @speech-stopped="handleSpeechStopped" />
+	<div class="message-list">
+		<MessageItem v-for="(message, index) in messages" :key="message.id" :message="message" :index="index"
+			@highlight="handleHighlight" @unhighlight="handleUnhighlight" @speech-started="handleSpeechStarted"
+			@speech-stopped="handleSpeechStopped" @edit="handleEdit" @delete="handleDelete" />
 	</div>
 </template>
 
@@ -12,83 +12,59 @@ import MessageItem from './MessageItem.vue';
 export default {
 	name: 'MessageList',
 	components: {
-		MessageItem
+		MessageItem,
 	},
 	props: {
 		messages: {
 			type: Array,
-			required: true
-		}
+			required: true,
+		},
 	},
 	data() {
 		return {
-			currentlyPlayingMessageIndex: null,
+			currentlyHighlighted: {
+				messageIndex: null,
+				partIndex: null,
+			},
+			currentlyPlayingMessage: null,
 		};
 	},
 	methods: {
-		handleEdit(index, updatedMessage) {
-			this.$emit('edit-message', { index, message: updatedMessage });
-		},
-		handleDelete(index, messageToDelete) {
-			this.$emit('delete-message', { index, message: messageToDelete });
-		},
-		handleHighlight({ messageIndex, partIndex }) {
-			const elementId = `message-${messageIndex}-part-${partIndex}`;
-			const element = document.getElementById(elementId);
-			const container = this.$refs.messagesContainer;
-			if (element && container) {
-				const containerRect = container.getBoundingClientRect();
-				const elementRect = element.getBoundingClientRect();
-
-				const isVisible = (
-					elementRect.top >= containerRect.top &&
-					elementRect.bottom <= containerRect.bottom - 100
-				);
-
-				if (!isVisible) {
-					element.scrollIntoView({
-						behavior: 'smooth',
-						block: 'start',
-						inline: 'nearest'
-					});
-				}
+		handleHighlight(payload) {
+			if (payload && typeof payload.messageIndex !== 'undefined' && typeof payload.partIndex !== 'undefined') {
+				this.currentlyHighlighted.messageIndex = payload.messageIndex;
+				this.currentlyHighlighted.partIndex = payload.partIndex;
+			} else {
+				this.currentlyHighlighted.messageIndex = null;
+				this.currentlyHighlighted.partIndex = null;
 			}
 		},
-		handleSpeechStarted(index) {
-			if (this.currentlyPlayingMessageIndex !== null && this.currentlyPlayingMessageIndex !== index) {
-				// Stop the currently playing message
-				const currentMessageItem = this.$refs.messageItems[this.currentlyPlayingMessageIndex];
-				if (currentMessageItem) {
-					currentMessageItem.stopSpeech();
-				}
-			}
-			this.currentlyPlayingMessageIndex = index;
+		handleUnhighlight() {
+			this.currentlyHighlighted.messageIndex = null;
+			this.currentlyHighlighted.partIndex = null;
 		},
-		handleSpeechStopped(index) {
-			if (this.currentlyPlayingMessageIndex === index) {
-				this.currentlyPlayingMessageIndex = null;
+		handleSpeechStarted(messageIndex) {
+			this.currentlyPlayingMessage = messageIndex;
+		},
+		handleSpeechStopped(messageIndex) {
+			if (this.currentlyPlayingMessage === messageIndex) {
+				this.currentlyPlayingMessage = null;
 			}
+		},
+		handleEdit(updatedMessage) {
+			this.$emit('edit', updatedMessage);
+		},
+		handleDelete(message) {
+			this.$emit('delete', message);
 		},
 	},
-	watch: {
-		messages: {
-			handler() {
-				this.$nextTick(() => {
-					this.$refs.messagesContainer.scrollTo({
-						top: this.$refs.messagesContainer.scrollHeight,
-						behavior: 'smooth'
-					});
-				});
-			},
-			deep: true
-		}
-	}
-}
+};
 </script>
 
 <style scoped>
-.messages {
-	width: 100%;
-	margin: 0 auto;
+.message-list {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
 }
 </style>

@@ -21,10 +21,9 @@
 			</v-menu>
 			<v-card-text class="message-text">
 				<template v-for="(part, idx) in formattedParts" :key="idx">
-					<component :is="getComponentType(part)" 
-						:id="`message-${index}-part-${idx}`"
-						:class="getClasses(part)"
-						@click="isInteractive(part) ? speakFromPart(part.index) : null"
+					<component :is="getComponentType(part)" :id="`message-${index}-part-${idx}`"
+						:class="getClasses(part)" @click="isInteractive(part) ? handleClick(part.index) : null"
+						@dblclick="isInteractive(part) ? handleDblClick(part.index) : null"
 						@mouseenter="isInteractive(part) ? highlightPart(part.index) : null"
 						@mouseleave="isInteractive(part) ? unhighlightPart() : null"
 						@pointerup="isInteractive(part) ? unhighlightPart() : null">
@@ -90,6 +89,8 @@ export default {
 			editDialog: false,
 			editedText: '',
 			isPlaying: false,
+			clickTimeout: null,
+			clickDelay: 300,
 		};
 	},
 	computed: {
@@ -138,9 +139,13 @@ export default {
 				this.$emit('speech-stopped', this.index);
 			}
 		},
-		handleHighlight(idx) {
-			this.playingHighlightIndex = idx;
-			this.$emit('highlight', { messageIndex: this.index, partIndex: idx });
+		handleHighlight(payload) {
+			if (payload && typeof payload.partIndex !== 'undefined') {
+				this.playingHighlightIndex = payload.partIndex;
+			} else {
+				this.playingHighlightIndex = null;
+			}
+			this.$emit('highlight', payload);
 		},
 		handleUnhighlight() {
 			this.playingHighlightIndex = null;
@@ -153,6 +158,19 @@ export default {
 		},
 		speakFromPart(startIdx) {
 			this.$refs.speech.speakFromSentence(startIdx);
+		},
+		playSingleSentence(index) {
+			this.$refs.speech.speakSingleSentence(index);
+		},
+		handleClick(partIndex) {
+			clearTimeout(this.clickTimeout);
+			this.clickTimeout = setTimeout(() => {
+				this.speakFromPart(partIndex);
+			}, this.clickDelay);
+		},
+		handleDblClick(partIndex) {
+			clearTimeout(this.clickTimeout);
+			this.playSingleSentence(partIndex);
 		},
 		openEditDialog() {
 			this.editedText = this.message.text;
@@ -267,7 +285,6 @@ export default {
 <style scoped>
 .message-container {
 	position: relative;
-	/* Ensure the sticky element is relative to this container */
 	width: 100%;
 	max-width: 1024px;
 	margin: 0 auto;
@@ -288,6 +305,7 @@ export default {
 
 .message-text {
 	white-space: pre-wrap;
+	user-select: none;
 }
 
 .sentence,
@@ -298,8 +316,10 @@ h4,
 h5,
 h6 {
 	cursor: pointer;
-	transition: background-color 0.3s;
+	transition: background-color 0.3s, box-shadow 0.3s;
 	color: black;
+	user-select: none;
+	/* Prevent text selection */
 }
 
 .sentence:hover,
@@ -309,15 +329,21 @@ h3:hover,
 h4:hover,
 h5:hover,
 h6:hover {
-	background-color: #ffffff;
+	background-color: #808080;
+	color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(128, 128, 128, 1.0);
 }
 
 .hover-highlight {
-	background-color: #ffffff;
+	background-color: #808080;
+	color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(128, 128, 128, 1.0);
 }
 
 .playing-highlight {
-	background-color: #ffffff;
+	background-color: #808080;
+	color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(128, 128, 128, 1.0);
 }
 
 strong {
@@ -328,7 +354,6 @@ em {
 	font-style: italic;
 }
 
-/* Remove default margin for headings */
 h1,
 h2,
 h3,
@@ -339,7 +364,6 @@ h6 {
 	padding: 0;
 }
 
-/* Ensure space elements are not interactive or highlighted */
 .space {
 	/* No additional styles to prevent highlighting */
 }
