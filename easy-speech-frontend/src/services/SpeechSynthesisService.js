@@ -43,19 +43,21 @@ class SpeechSynthesisService {
 
 	async speakText(text, onBoundary, onEnd, onError) {
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
+		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.speakText(remoteVoice.actualName, text, this.language, onEnd, onError);
+			await this.remoteSynthesiser.speakText(remoteVoice.actualName, text, this.language, selectedSpeed, onEnd, onError);
 		} else {
-			await this.localSynthesiser.speakText(text, onBoundary, onEnd, onError);
+			await this.localSynthesiser.speakText(text, onBoundary, onEnd, onError, selectedSpeed);
 		}
 	}
 
 	async preloadText(text) {
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
+		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text, this.language);
+			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text, this.language, selectedSpeed);
 		}
 	}
 

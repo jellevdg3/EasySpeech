@@ -5,8 +5,8 @@ class RemoteSpeechSynthesiser {
 		this.audioCache = new Map();
 	}
 
-	async preloadText(voiceName, text, language) {
-		const cacheKey = `${voiceName}:${language}:${text}`;
+	async preloadText(voiceName, text, language, speed) { // Added speed parameter
+		const cacheKey = `${voiceName}:${language}:${text}:speed=${speed}%`;
 		if (this.audioCache.has(cacheKey)) {
 			return;
 		}
@@ -16,7 +16,12 @@ class RemoteSpeechSynthesiser {
 				headers: {
 					'Content-Type': 'application/json'
 				},
-				body: JSON.stringify({ voice: voiceName, text, language })
+				body: JSON.stringify({
+					voice: voiceName,
+					text,
+					language,
+					speed: `${speed}%` // Include speed in request body
+				})
 			});
 			if (!response.ok) {
 				throw new Error('Network response was not ok');
@@ -30,12 +35,12 @@ class RemoteSpeechSynthesiser {
 		}
 	}
 
-	async speakText(voiceName, text, language, onEnd, onError) {
-		const cacheKey = `${voiceName}:${language}:${text}`;
+	async speakText(voiceName, text, language, speed, onEnd, onError) { // Added speed parameter
+		const cacheKey = `${voiceName}:${language}:${text}:speed=${speed}%`;
 		let audio = this.audioCache.get(cacheKey);
 		if (!audio) {
 			try {
-				await this.preloadText(voiceName, text, language);
+				await this.preloadText(voiceName, text, language, speed);
 				audio = this.audioCache.get(cacheKey);
 			} catch (error) {
 				onError(error);
@@ -72,6 +77,9 @@ class RemoteSpeechSynthesiser {
 		this.audioCache.forEach((audio) => {
 			audio.pause();
 			audio.currentTime = 0;
+		});
+		this.audioCache.forEach((audio) => {
+			URL.revokeObjectURL(audio.src);
 		});
 		this.audioCache.clear();
 	}

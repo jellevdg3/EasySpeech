@@ -10,9 +10,17 @@
 		<MessageList :messages="messages" class="flex-grow-1 overflow-y-auto" @edit-message="handleEditMessage"
 			@delete-message="handleDeleteMessage" />
 		<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
-		<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
-			:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
-			:language="selectedLanguage" @update:language="updateSelectedLanguage($event)" />
+		<SettingsDialog 
+			:dialog="dialog" 
+			@update:dialog="dialog = $event" 
+			:voices="voices"
+			:selectedVoice="selectedVoice" 
+			@update:selectedVoice="updateSelectedVoice($event)"
+			:language="selectedLanguage" 
+			@update:language="updateSelectedLanguage($event)"
+			:selectedSpeed="selectedSpeed"
+			@update:selectedSpeed="updateSelectedSpeed($event)" 
+		/>
 	</v-container>
 </template>
 
@@ -37,12 +45,14 @@ export default {
 			dialog: false,
 			selectedVoice: '',
 			selectedLanguage: 'Nederlands',
-			voices: []
+			voices: [],
+			selectedSpeed: 0 // Added for voice speed
 		}
 	},
 	mounted() {
 		this.loadVoices();
 		this.loadMessages();
+		this.loadSpeed(); // Load speed on mount
 	},
 	beforeUnmount() {
 		// No event listeners to remove since the service handles them
@@ -54,6 +64,9 @@ export default {
 		selectedLanguage(newVal) {
 			LocalDatabaseService.save('selectedLanguage', newVal);
 			SpeechSynthesisService.setLanguage(newVal);
+		},
+		selectedSpeed(newVal) { // Watcher for selectedSpeed
+			LocalDatabaseService.save('selectedSpeed', newVal);
 		}
 	},
 	methods: {
@@ -61,6 +74,7 @@ export default {
 			this.voices = await SpeechSynthesisService.getVoicesList();
 			const savedVoice = LocalDatabaseService.load('selectedVoice');
 			const savedLanguage = LocalDatabaseService.load('selectedLanguage');
+			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
 			if (savedLanguage) {
 				this.selectedLanguage = savedLanguage;
 			} else {
@@ -73,12 +87,25 @@ export default {
 			} else {
 				this.selectedVoice = 'Standaard - Build in';
 			}
+			if (savedSpeed !== null && savedSpeed !== undefined) {
+				this.selectedSpeed = savedSpeed;
+			} else {
+				this.selectedSpeed = 0; // Default speed
+			}
 			SpeechSynthesisService.setLanguage(this.selectedLanguage);
 		},
 		loadMessages() {
 			const savedMessages = LocalDatabaseService.load('messages');
 			if (savedMessages && Array.isArray(savedMessages)) {
 				this.messages = savedMessages;
+			}
+		},
+		loadSpeed() {
+			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
+			if (savedSpeed !== null && savedSpeed !== undefined) {
+				this.selectedSpeed = savedSpeed;
+			} else {
+				this.selectedSpeed = 0; // Default speed
 			}
 		},
 		sendMessage() {
@@ -93,6 +120,9 @@ export default {
 		},
 		updateSelectedLanguage(newLanguage) {
 			this.selectedLanguage = newLanguage;
+		},
+		updateSelectedSpeed(newSpeed) { // Method to update selectedSpeed
+			this.selectedSpeed = newSpeed;
 		},
 		handleEditMessage({ index, message }) {
 			if (index >= 0 && index < this.messages.length) {

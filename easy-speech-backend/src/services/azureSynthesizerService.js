@@ -46,14 +46,28 @@ class azureSynthesizerService {
 
 		return synthesizerCacheService.getOrSet(this.serviceName, voice, language, text, speed, async () => {
 			console.log(langCode);
-			const ssml = `
+			const isMultilingualNeural = voice.includes('MultilingualNeural');
+			const escapedText = this.escapeXml(text);
+			let ssml = `
                 <speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${langCode}'>
                     <voice name='${voice}' xml:lang='${langCode}'>
-                        <prosody rate='${speed}'>
-                            ${this.escapeXml(text)}
+                        <prosody rate='${speed}'>`;
+
+			if (isMultilingualNeural) {
+				ssml += `
+							<lang xml:lang='${langCode}'>
+                            	${escapedText}
+							</lang>`;
+			} else {
+				ssml += `
+                            	${escapedText}`;
+			}
+
+			ssml += `
                         </prosody>
                     </voice>
                 </speak>`;
+
 			console.log('Generate text:', text, 'with voice:', voice, 'language:', language, 'speed:', speed);
 			const response = await fetch(this.ttsEndpoint, {
 				method: 'POST',

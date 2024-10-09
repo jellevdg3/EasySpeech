@@ -1,5 +1,3 @@
---- src/components/SettingsDialog.vue ---
-```vue
 <template>
 	<v-dialog v-model="localDialog" max-width="400">
 		<v-card>
@@ -7,6 +5,21 @@
 			<v-card-text>
 				<v-select :items="voices" label="Select Voice" v-model="localSelectedVoice"></v-select>
 				<v-select :items="languages" label="Select Language" v-model="localLanguage" class="mt-4"></v-select>
+				<v-slider
+					v-model="localSpeed"
+					label="Voice Speed"
+					:min="-100"
+					:max="100"
+					step="10"
+					ticks
+					tick-size="4"
+					thumb-label="always"
+					class="mt-4"
+				>
+					<template v-slot:append>
+						<span>{{ localSpeed }}%</span>
+					</template>
+				</v-slider>
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer></v-spacer>
@@ -37,6 +50,11 @@ export default {
 			type: String,
 			required: true,
 			default: 'Nederlands'
+		},
+		selectedSpeed: { // New prop for speed
+			type: Number,
+			required: true,
+			default: 0
 		}
 	},
 	data() {
@@ -44,6 +62,7 @@ export default {
 			localDialog: this.dialog,
 			localSelectedVoice: this.selectedVoice,
 			localLanguage: this.language,
+			localSpeed: this.selectedSpeed, // Local data for speed
 			languages: [
 				'Nederlands',
 				'English',
@@ -67,6 +86,7 @@ export default {
 			if (!newVal) {
 				this.$emit('update:selectedVoice', this.localSelectedVoice);
 				this.$emit('update:language', this.localLanguage);
+				this.$emit('update:selectedSpeed', this.localSpeed); // Emit speed on dialog close
 			}
 		},
 		selectedVoice(newVal) {
@@ -80,6 +100,12 @@ export default {
 		},
 		localLanguage(newVal) {
 			this.$emit('update:language', newVal);
+		},
+		selectedSpeed(newVal) { // Watcher for external speed changes
+			this.localSpeed = newVal;
+		},
+		localSpeed(newVal) { // Emit speed changes
+			this.$emit('update:selectedSpeed', newVal);
 		}
 	},
 	methods: {
@@ -95,4 +121,3 @@ export default {
 	margin-top: 16px;
 }
 </style>
-```
