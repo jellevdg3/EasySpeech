@@ -1,0 +1,8 @@
+{
+	"appService.zipIgnorePattern": [
+		"node_modules{,/**}",
+		".vscode{,/**}"
+	],
+	"appService.defaultWebAppToDeploy": "/subscriptions/b12130fd-3b15-4c48-a512-744e58f36fd7/resourceGroups/ilab-ai-test/providers/Microsoft.Web/sites/easy-speech-backend",
+	"appService.deploySubpath": "."
+}
