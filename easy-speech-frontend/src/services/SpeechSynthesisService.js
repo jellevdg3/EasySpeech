@@ -41,23 +41,42 @@ class SpeechSynthesisService {
 		return [...localVoices, ...remoteDisplayNames];
 	}
 
+	/**
+	 * Strips markdown-like formatting from the text.
+	 * Removes **bold**, *italic*, and other similar markers.
+	 * @param {string} text - The formatted text.
+	 * @returns {string} - The plain text without formatting.
+	 */
+	stripFormatting(text) {
+		return text
+			.replace(/\*\*(.*?)\*\*/g, '$1') // Remove **bold**
+			.replace(/\*(.*?)\*/g, '$1')     // Remove *italic*
+			.replace(/#{1,6}\s+(.*)/g, '$1') // Remove Markdown headings
+			.replace(/`{1,3}(.*?)`{1,3}/g, '$1') // Remove inline code
+			.replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove markdown links
+			.replace(/!\[.*?\]\(.*?\)/g, '') // Remove markdown images
+			.trim();
+	}
+
 	async speakText(text, onBoundary, onEnd, onError) {
+		const plainText = this.stripFormatting(text);
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
 		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.speakText(remoteVoice.actualName, text, this.language, selectedSpeed, onEnd, onError);
+			await this.remoteSynthesiser.speakText(remoteVoice.actualName, plainText, this.language, selectedSpeed, onEnd, onError);
 		} else {
-			await this.localSynthesiser.speakText(text, onBoundary, onEnd, onError, selectedSpeed);
+			await this.localSynthesiser.speakText(plainText, onBoundary, onEnd, onError, selectedSpeed);
 		}
 	}
 
 	async preloadText(text) {
+		const plainText = this.stripFormatting(text);
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
 		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
-			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, text, this.language, selectedSpeed);
+			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, plainText, this.language, selectedSpeed);
 		}
 	}
 
