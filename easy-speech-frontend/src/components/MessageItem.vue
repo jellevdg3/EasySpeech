@@ -26,7 +26,10 @@
 						@dblclick="isInteractive(part) ? handleDblClick(part.index) : null"
 						@mouseenter="isInteractive(part) ? highlightPart(part.index) : null"
 						@mouseleave="isInteractive(part) ? unhighlightPart() : null"
-						@pointerup="isInteractive(part) ? unhighlightPart() : null">
+						@pointerup="isInteractive(part) ? unhighlightPart() : null"
+						@touchstart="isInteractive(part) ? highlightPart(part.index) : null"
+						@touchend="isInteractive(part) ? unhighlightPart() : null"
+						@touchcancel="isInteractive(part) ? unhighlightPart() : null">
 						<template v-if="part.type === 'sentence' || part.type === 'heading'">
 							<template v-for="(subPart, subIdx) in part.formattedText" :key="subIdx">
 								<strong v-if="subPart.type === 'bold'">{{ subPart.text }}</strong>
@@ -322,23 +325,19 @@ h6 {
 	/* Prevent text selection */
 }
 
-.sentence:hover,
-h1:hover,
-h2:hover,
-h3:hover,
-h4:hover,
-h5:hover,
-h6:hover {
-	background-color: #808080;
-	color: #ffffff;
-	box-shadow: 0 0 0 3px rgba(128, 128, 128, 1.0);
+/* Apply hover styles only on devices that support hover */
+@media (hover: hover) {
+
+	.sentence:hover,
+	h1:hover,
+	h2:hover,
+	h3:hover,
+	h4:hover,
+	h5:hover,
+	h6:hover {}
 }
 
-.hover-highlight {
-	background-color: #808080;
-	color: #ffffff;
-	box-shadow: 0 0 0 3px rgba(128, 128, 128, 1.0);
-}
+.hover-highlight {}
 
 .playing-highlight {
 	background-color: #808080;

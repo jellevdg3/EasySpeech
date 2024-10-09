@@ -7,7 +7,7 @@
 				<v-icon>mdi-cog</v-icon>
 			</v-btn>
 		</v-row>
-		<MessageList :messages="messages" class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage"
+		<MessageList ref="messageList" :messages="messages" class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage"
 			@delete="handleDeleteMessage" />
 		<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
 		<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
@@ -23,7 +23,7 @@ import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
 import LocalDatabaseService from '../services/LocalDatabaseService.js';
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
-import GuidUtils from '../utils/GuidUtils.js'; // Imported GuidUtils
+import GuidUtils from '../utils/GuidUtils.js';
 
 export default {
 	name: 'ChatInterface',
@@ -133,13 +133,18 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		sendMessage() {
 			if (this.newMessage.trim() === '') return;
 			const newMsg = {
-				id: GuidUtils.generateGuid(), // Assigned unique id
+				id: GuidUtils.generateGuid(),
 				sender: 'user',
 				text: this.newMessage
 			};
 			this.messages.push(newMsg);
 			LocalDatabaseService.save('messages', this.messages);
 			this.newMessage = '';
+			this.$nextTick(() => {
+				if (this.$refs.messageList) {
+					this.$refs.messageList.scrollToBottom();
+				}
+			});
 		},
 		updateSelectedVoice(newVoice) {
 			this.selectedVoice = newVoice;

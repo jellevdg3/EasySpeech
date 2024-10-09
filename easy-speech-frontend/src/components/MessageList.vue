@@ -81,6 +81,14 @@ export default {
 		handleDelete(message) {
 			this.$emit('delete', message);
 		},
+		scrollToBottom() {
+			this.$nextTick(() => {
+				const container = this.$refs.messageList;
+				if (container) {
+					container.scrollTop = container.scrollHeight;
+				}
+			});
+		},
 	},
 };
 </script>
