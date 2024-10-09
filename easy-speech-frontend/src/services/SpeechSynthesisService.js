@@ -107,7 +107,7 @@ class SpeechSynthesisService {
 					charIndex += sentence.length;
 					sentenceIdx++;
 					if (hasTrailingSpace) {
-						partsResult.push({ type: 'space' });
+						partsResult.push({ type: 'space', text: ' ' });
 						charIndex += 1;
 					}
 				}

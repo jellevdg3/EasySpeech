@@ -35,7 +35,9 @@
 								<span v-else>{{ subPart.text }}</span>
 							</template>
 						</template>
-						<template v-else-if="part.type === 'space'"> </template>
+						<template v-else-if="part.type === 'space'">
+							<span class="space">&nbsp;</span>
+						</template>
 						<template v-else-if="part.type === 'newline'"><br /></template>
 					</component>
 				</template>
@@ -335,5 +337,10 @@ h5,
 h6 {
 	margin: 0;
 	padding: 0;
+}
+
+/* Ensure space elements are not interactive or highlighted */
+.space {
+	/* No additional styles to prevent highlighting */
 }
 </style>
