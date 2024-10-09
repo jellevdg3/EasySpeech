@@ -20,17 +20,21 @@
 				</v-list>
 			</v-menu>
 			<v-card-text class="message-text">
-				<template v-for="(part, idx) in parts" :key="idx">
-					<span v-if="part.type === 'sentence'" :class="[
-						'sentence',
-						{
-							'hover-highlight': hoverHighlightIndex === part.index,
-							'playing-highlight': playingHighlightIndex === part.index,
-						},
-					]" @mouseenter="highlightSentence(part.index)" @mouseleave="unhighlightSentence"
-						@click="speakFromSentence(part.index)">{{ part.text }}</span>
-					<span v-else-if="part.type === 'space'"> </span>
-					<br v-else-if="part.type === 'newline'" />
+				<template v-for="(part, idx) in formattedParts" :key="idx">
+					<component :is="getComponentType(part)" :class="getClasses(part)"
+						@click="isInteractive(part) ? speakFromPart(part.index) : null"
+						@mouseenter="isInteractive(part) ? highlightPart(part.index) : null"
+						@mouseleave="isInteractive(part) ? unhighlightPart() : null">
+						<template v-if="part.type === 'sentence' || part.type === 'heading'">
+							<template v-for="(subPart, subIdx) in part.formattedText" :key="subIdx">
+								<strong v-if="subPart.type === 'bold'">{{ subPart.text }}</strong>
+								<em v-else-if="subPart.type === 'italic'">{{ subPart.text }}</em>
+								<span v-else>{{ subPart.text }}</span>
+							</template>
+						</template>
+						<template v-else-if="part.type === 'space'"> </template>
+						<template v-else-if="part.type === 'newline'"><br /></template>
+					</component>
 				</template>
 			</v-card-text>
 
@@ -92,6 +96,29 @@ export default {
 		parts() {
 			return this.splitResult.parts;
 		},
+		formattedParts() {
+			return this.parts.map(part => {
+				if (part.type === 'sentence') {
+					const headingMatch = part.text.match(/^(#{1,6})\s+(.*)/);
+					if (headingMatch) {
+						const level = headingMatch[1].length;
+						const content = headingMatch[2];
+						return {
+							...part,
+							type: 'heading',
+							level: level,
+							formattedText: this.parseFormatting(content),
+						};
+					} else {
+						return {
+							...part,
+							formattedText: this.parseFormatting(part.text),
+						};
+					}
+				}
+				return part;
+			});
+		},
 		sentences() {
 			return this.splitResult.sentences;
 		},
@@ -106,13 +133,13 @@ export default {
 		handleUnhighlight() {
 			this.playingHighlightIndex = null;
 		},
-		highlightSentence(idx) {
+		highlightPart(idx) {
 			this.hoverHighlightIndex = idx;
 		},
-		unhighlightSentence() {
+		unhighlightPart() {
 			this.hoverHighlightIndex = null;
 		},
-		speakFromSentence(startIdx) {
+		speakFromPart(startIdx) {
 			this.$refs.speech.speakFromSentence(startIdx);
 		},
 		openEditDialog() {
@@ -130,6 +157,86 @@ export default {
 		},
 		deleteMessage() {
 			this.$emit('delete', this.message);
+		},
+		parseFormatting(text) {
+			const regex = /(\*\*[^*]+\*\*|\*[^*]+\*)/g;
+			let lastIndex = 0;
+			const parts = [];
+			let match;
+
+			while ((match = regex.exec(text)) !== null) {
+				if (match.index > lastIndex) {
+					parts.push({
+						type: 'text',
+						text: text.substring(lastIndex, match.index),
+					});
+				}
+				const matchedText = match[0];
+				if (matchedText.startsWith('**') && matchedText.endsWith('**')) {
+					parts.push({
+						type: 'bold',
+						text: matchedText.slice(2, -2),
+					});
+				} else if (matchedText.startsWith('*') && matchedText.endsWith('*')) {
+					parts.push({
+						type: 'italic',
+						text: matchedText.slice(1, -1),
+					});
+				}
+				lastIndex = regex.lastIndex;
+			}
+
+			if (lastIndex < text.length) {
+				parts.push({
+					type: 'text',
+					text: text.substring(lastIndex),
+				});
+			}
+
+			return parts;
+		},
+		getComponentType(part) {
+			if (part.type === 'heading') {
+				switch (part.level) {
+					case 1:
+						return 'h1';
+					case 2:
+						return 'h2';
+					case 3:
+						return 'h3';
+					case 4:
+						return 'h4';
+					case 5:
+						return 'h5';
+					case 6:
+						return 'h6';
+					default:
+						return 'span';
+				}
+			} else if (part.type === 'sentence') {
+				return 'span';
+			} else if (part.type === 'space') {
+				return 'span';
+			} else if (part.type === 'newline') {
+				return 'br';
+			} else {
+				return 'span';
+			}
+		},
+		getClasses(part) {
+			if (part.type === 'sentence' || part.type === 'heading') {
+				return [
+					'sentence',
+					{
+						'hover-highlight': this.hoverHighlightIndex === part.index,
+						'playing-highlight': this.playingHighlightIndex === part.index,
+					},
+				];
+			}
+			return '';
+		},
+		isInteractive(part) {
+			return part.type === 'sentence' || part.type === 'heading';
 		},
 	},
 	beforeUnmount() {
@@ -164,13 +271,25 @@ export default {
 	white-space: pre-wrap;
 }
 
-.sentence {
+.sentence,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
 	cursor: pointer;
 	transition: background-color 0.3s;
 	color: black;
 }
 
-.sentence:hover {
+.sentence:hover,
+h1:hover,
+h2:hover,
+h3:hover,
+h4:hover,
+h5:hover,
+h6:hover {
 	background-color: #ffffff;
 }
 
@@ -180,5 +299,24 @@ export default {
 
 .playing-highlight {
 	background-color: #ffffff;
+}
+
+strong {
+	font-weight: bold;
+}
+
+em {
+	font-style: italic;
+}
+
+/* Remove default margin for headings */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+	margin: 0;
+	padding: 0;
 }
 </style>
