@@ -11,7 +11,7 @@ class RemoteSpeechSynthesiser {
 			return;
 		}
 		try {
-			const response = await fetch('http://localhost:3000/voices/generate', {
+			const response = await fetch(process.env.VUE_APP_API_URL, { // Updated URL
 				method: 'POST',
 				headers: {
 					'Content-Type': 'application/json'

@@ -7,8 +7,8 @@
 				<v-icon>mdi-cog</v-icon>
 			</v-btn>
 		</v-row>
-		<MessageList :messages="messages" class="flex-grow-1 overflow-y-auto" @edit-message="handleEditMessage"
-			@delete-message="handleDeleteMessage" />
+		<MessageList :messages="messages" class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage"
+			@delete="handleDeleteMessage" />
 		<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
 		<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
 			:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
@@ -23,6 +23,7 @@ import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
 import LocalDatabaseService from '../services/LocalDatabaseService.js';
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
+import GuidUtils from '../utils/GuidUtils.js'; // Imported GuidUtils
 
 export default {
 	name: 'ChatInterface',
@@ -90,13 +91,22 @@ export default {
 		loadMessages() {
 			const savedMessages = LocalDatabaseService.load('messages');
 			if (savedMessages && Array.isArray(savedMessages)) {
-				this.messages = savedMessages;
+				// Ensure each message has a unique id
+				this.messages = savedMessages.map(msg => {
+					if (!msg.id) {
+						return { ...msg, id: GuidUtils.generateGuid() };
+					}
+					return msg;
+				});
+				LocalDatabaseService.save('messages', this.messages);
 			}
 
 			if (this.messages.length === 0) {
 				this.messages = [
 					{
-						sender: 'bot', text: `**De Kleine Robot en de Verdwaalde Kat**
+						id: GuidUtils.generateGuid(), // Assigned unique id
+						sender: 'bot',
+						text: `**De Kleine Robot en de Verdwaalde Kat**
 
 Er was eens een kleine robot genaamd Bolt, die leefde in een stad vol wolkenkrabbers en vliegende auto's. Hoewel Bolt heel slim en sterk was, voelde hij zich vaak eenzaam. Op een dag, terwijl hij door een verlaten park liep, hoorde hij een zacht gemiauw. Verrast keek hij om zich heen en zag een kleine, grijze kat die vastzat in een hoge boom.
 
@@ -106,7 +116,8 @@ De kat miauwde nog een keer, alsof hij hulp vroeg. Bolt activeerde zijn jetpacks
 
 Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door de stad, op zoek naar nieuwe avonturen. Bolt voelde zich nooit meer alleen, en de kat had een nieuwe vriend gevonden die altijd voor haar zorgde.
 
-"Soms," dacht Bolt, terwijl hij naar de ondergaande zon keek, "is het vinden van een vriend alles wat je nodig hebt."` }
+"Soms," dacht Bolt, terwijl hij naar de ondergaande zon keek, "is het vinden van een vriend alles wat je nodig hebt."`
+					}
 				];
 				LocalDatabaseService.save('messages', this.messages);
 			}
@@ -121,7 +132,11 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		},
 		sendMessage() {
 			if (this.newMessage.trim() === '') return;
-			const newMsg = { sender: 'user', text: this.newMessage };
+			const newMsg = {
+				id: GuidUtils.generateGuid(), // Assigned unique id
+				sender: 'user',
+				text: this.newMessage
+			};
 			this.messages.push(newMsg);
 			LocalDatabaseService.save('messages', this.messages);
 			this.newMessage = '';
@@ -135,14 +150,16 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		updateSelectedSpeed(newSpeed) { // Method to update selectedSpeed
 			this.selectedSpeed = newSpeed;
 		},
-		handleEditMessage({ index, message }) {
-			if (index >= 0 && index < this.messages.length) {
-				this.messages.splice(index, 1, message);
+		handleEditMessage(updatedMessage) {
+			const index = this.messages.findIndex(msg => msg.id === updatedMessage.id);
+			if (index !== -1) {
+				this.messages.splice(index, 1, updatedMessage);
 				LocalDatabaseService.save('messages', this.messages);
 			}
 		},
-		handleDeleteMessage({ index }) {
-			if (index >= 0 && index < this.messages.length) {
+		handleDeleteMessage(message) {
+			const index = this.messages.findIndex(msg => msg.id === message.id);
+			if (index !== -1) {
 				this.messages.splice(index, 1);
 				LocalDatabaseService.save('messages', this.messages);
 			}
