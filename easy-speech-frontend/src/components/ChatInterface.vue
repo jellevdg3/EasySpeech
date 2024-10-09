@@ -2,7 +2,7 @@
 	<v-container fluid class="d-flex flex-column justify-center items-center chat-container"
 		style="height: 100vh; padding: 0;">
 		<v-row class="w-full" align="center" justify="end">
-			<span class="selected-voice mr-2">{{ selectedVoice }}</span>
+			<span class="selected-voice mt-1 mr-2">{{ selectedVoice }}</span>
 			<v-btn icon @click="dialog = true">
 				<v-icon>mdi-cog</v-icon>
 			</v-btn>
