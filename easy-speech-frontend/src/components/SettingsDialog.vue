@@ -5,17 +5,8 @@
 			<v-card-text>
 				<v-select :items="voices" label="Select Voice" v-model="localSelectedVoice"></v-select>
 				<v-select :items="languages" label="Select Language" v-model="localLanguage" class="mt-4"></v-select>
-				<v-slider
-					v-model="localSpeed"
-					label="Voice Speed"
-					:min="-100"
-					:max="100"
-					step="10"
-					ticks
-					tick-size="4"
-					thumb-label="always"
-					class="mt-4"
-				>
+				<v-slider v-model="localSpeed" label="Voice Speed" :min="-100" :max="100" step="10" ticks tick-size="4"
+					thumb-label="true" class="mt-4">
 					<template v-slot:append>
 						<span>{{ localSpeed }}%</span>
 					</template>

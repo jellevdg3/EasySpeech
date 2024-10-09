@@ -21,10 +21,13 @@
 			</v-menu>
 			<v-card-text class="message-text">
 				<template v-for="(part, idx) in formattedParts" :key="idx">
-					<component :is="getComponentType(part)" :class="getClasses(part)"
+					<component :is="getComponentType(part)" 
+						:id="`message-${index}-part-${idx}`"
+						:class="getClasses(part)"
 						@click="isInteractive(part) ? speakFromPart(part.index) : null"
 						@mouseenter="isInteractive(part) ? highlightPart(part.index) : null"
-						@mouseleave="isInteractive(part) ? unhighlightPart() : null">
+						@mouseleave="isInteractive(part) ? unhighlightPart() : null"
+						@pointerup="isInteractive(part) ? unhighlightPart() : null">
 						<template v-if="part.type === 'sentence' || part.type === 'heading'">
 							<template v-for="(subPart, subIdx) in part.formattedText" :key="subIdx">
 								<strong v-if="subPart.type === 'bold'">{{ subPart.text }}</strong>
@@ -84,6 +87,7 @@ export default {
 			playingHighlightIndex: null,
 			editDialog: false,
 			editedText: '',
+			isPlaying: false,
 		};
 	},
 	computed: {
@@ -126,9 +130,15 @@ export default {
 	methods: {
 		handleToggleSpeech(isPlaying) {
 			this.isPlaying = isPlaying;
+			if (isPlaying) {
+				this.$emit('speech-started', this.index);
+			} else {
+				this.$emit('speech-stopped', this.index);
+			}
 		},
 		handleHighlight(idx) {
 			this.playingHighlightIndex = idx;
+			this.$emit('highlight', { messageIndex: this.index, partIndex: idx });
 		},
 		handleUnhighlight() {
 			this.playingHighlightIndex = null;
@@ -238,6 +248,11 @@ export default {
 		isInteractive(part) {
 			return part.type === 'sentence' || part.type === 'heading';
 		},
+		stopSpeech() {
+			if (this.$refs.speech) {
+				this.$refs.speech.cancelSpeech();
+			}
+		},
 	},
 	beforeUnmount() {
 		if (this.$refs.speech) {
@@ -249,7 +264,8 @@ export default {
 
 <style scoped>
 .message-container {
-	position: relative; /* Ensure the sticky element is relative to this container */
+	position: relative;
+	/* Ensure the sticky element is relative to this container */
 	width: 100%;
 	max-width: 1024px;
 	margin: 0 auto;
