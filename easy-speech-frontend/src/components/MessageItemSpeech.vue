@@ -1,5 +1,5 @@
 <template>
-	<v-btn icon class="play-button" @click="toggleSpeech">
+	<v-btn icon class="play-button sticky-play" @click="toggleSpeech">
 		<transition name="icon-fade" mode="out-in">
 			<v-icon :key="isPlaying ? 'mdi-pause' : 'mdi-play'">
 				{{ isPlaying ? 'mdi-pause' : 'mdi-play' }}
@@ -127,6 +127,14 @@ export default {
 <style scoped>
 .play-button {
 	margin-right: 8px;
+	position: sticky;
+	top: 10px;
+	/* Adjust this value to control where it sticks on the scroll */
+	bottom: 10px;
+	/* Ensure it doesn't go beyond the container */
+	z-index: 10;
+	/* Ensure it appears above the content */
+	background-color: transparent;
 }
 
 .icon-fade-enter-active,

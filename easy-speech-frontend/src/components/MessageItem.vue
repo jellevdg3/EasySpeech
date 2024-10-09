@@ -249,6 +249,7 @@ export default {
 
 <style scoped>
 .message-container {
+	position: relative; /* Ensure the sticky element is relative to this container */
 	width: 100%;
 	max-width: 1024px;
 	margin: 0 auto;
