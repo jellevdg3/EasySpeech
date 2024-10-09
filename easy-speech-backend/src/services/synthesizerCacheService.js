@@ -1,8 +1,17 @@
 const crypto = require('crypto');
+const cron = require('node-cron');
 
 class SynthesizerCacheService {
 	constructor() {
 		this.cache = new Map();
+
+		// Schedule cache clearing at 3:16 PM Netherlands time
+		cron.schedule('0 3 * * *', () => {
+			this.clearCache();
+			console.log('Synthesizer cache cleared at 03:00 AM Netherlands time.');
+		}, {
+			timezone: 'Europe/Amsterdam' // Timezone set to Netherlands
+		});
 	}
 
 	generateKey(serviceName, voice, language, text, speed) {
@@ -25,6 +34,10 @@ class SynthesizerCacheService {
 		});
 		this.cache.set(key, promise);
 		return promise;
+	}
+
+	clearCache() {
+		this.cache.clear();
 	}
 }
 
