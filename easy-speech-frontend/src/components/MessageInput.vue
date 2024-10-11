@@ -51,5 +51,6 @@ export default {
 	margin: 0 auto;
 	padding: 16px;
 	box-sizing: border-box;
+	background-color: var(--v-theme-background);
 }
 </style>

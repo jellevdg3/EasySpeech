@@ -1,21 +1,5 @@
-body::-webkit-scrollbar {
-    display: none;
-}
-
-body {
-    overflow: hidden;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-html::-webkit-scrollbar {
-    display: none;
-}
-
-html {
-    overflow: hidden;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+html, body, #app {
+    height: 100%;
 }
 
 .v-input__details {

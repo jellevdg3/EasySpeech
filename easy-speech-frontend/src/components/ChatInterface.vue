@@ -21,10 +21,10 @@
 			@delete-conversation="deleteConversation" @rename-conversation="renameConversation" v-model:drawer="drawer"
 			:isMobile="isMobile" />
 
-		<v-main>
-			<v-container fluid class="d-flex flex-column" style="height: calc(100vh - 64px); padding: 0;">
+		<v-main class="d-flex flex-column" style="min-height: 0;">
+			<v-container fluid class="d-flex flex-column flex-grow-1" style="padding: 0; min-height: 0;">
 				<MessageList ref="messageList" :messages="currentConversation?.messages || []"
-					class="flex-grow-1" @edit="handleEditMessage" @delete="handleDeleteMessage" />
+					class="message-list" @edit="handleEditMessage" @delete="handleDeleteMessage" />
 				<MessageInput v-model="newMessage" @send="sendMessage" />
 				<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
 					:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
@@ -395,5 +395,11 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 
 .conversation-drawer {
 	width: 250px;
+}
+
+.message-list {
+	flex: 1;
+	overflow-y: auto;
+	min-height: 0;
 }
 </style>
