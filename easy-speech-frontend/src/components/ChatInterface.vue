@@ -22,11 +22,10 @@
 			:isMobile="isMobile" />
 
 		<v-main>
-			<v-container fluid class="d-flex flex-column justify-center items-center chat-container"
-				style="height: calc(100vh - 64px); padding: 0;">
+			<v-container fluid class="d-flex flex-column" style="height: calc(100vh - 64px); padding: 0;">
 				<MessageList ref="messageList" :messages="currentConversation?.messages || []"
-					class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage" @delete="handleDeleteMessage" />
-				<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
+					class="flex-grow-1" @edit="handleEditMessage" @delete="handleDeleteMessage" />
+				<MessageInput v-model="newMessage" @send="sendMessage" />
 				<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
 					:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
 					:language="selectedLanguage" @update:language="updateSelectedLanguage($event)"
@@ -71,7 +70,7 @@ export default {
 		const selectedSpeed = ref(0);
 		const darkTheme = ref(false);
 		const theme = useTheme();
-		const { locale } = useI18n();
+		const { t, locale } = useI18n();
 		const messageList = ref(null);
 		const { mobile } = useDisplay();
 		const isMobile = computed(() => mobile.value);
@@ -141,7 +140,7 @@ export default {
 				conversations.value = [
 					{
 						id: GuidUtils.generateGuid(),
-						name: 'Conversation 1',
+						name: t('conversationName', { number: 1 }),
 						messages: [
 							{
 								id: GuidUtils.generateGuid(),
@@ -226,7 +225,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		const addConversation = () => {
 			const newConv = {
 				id: GuidUtils.generateGuid(),
-				name: `Conversation ${conversations.value.length + 1}`,
+				name: t('conversationName', { number: conversations.value.length + 1 }),
 				messages: []
 			};
 			conversations.value.push(newConv);

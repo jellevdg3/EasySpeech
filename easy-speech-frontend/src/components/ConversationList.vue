@@ -4,13 +4,14 @@
 		<v-list dense>
 			<v-list-item>
 				<div class="d-flex align-center">
-					<v-list-item-title class="headline">Conversations</v-list-item-title>
-					<v-btn icon size="x-small" class="ml-2 mb-1 d-none d-lg-flex" @click="$emit('add-conversation')">
+					<v-list-item-title class="headline">{{ $t('conversations') }}</v-list-item-title>
+					<v-btn icon size="x-small" class="ml-2 mb-1 d-none d-lg-flex elevation-0"
+						@click="$emit('add-conversation')">
 						<v-icon size="x-small">mdi-plus</v-icon>
 					</v-btn>
 				</div>
 			</v-list-item>
-			<v-divider class="mb-2"></v-divider>
+			<v-divider class=" mb-2"></v-divider>
 			<v-list-item v-for="(conv) in conversations" :key="conv.id" :active="conv.id === currentConversation?.id"
 				@click="selectConversation(conv)">
 				<div class="d-flex justify-space-between align-center" style="width: 100%;">
@@ -30,25 +31,25 @@
 		</v-list>
 		<v-dialog v-model="deleteDialog" max-width="400">
 			<v-card>
-				<v-card-title class="headline">Confirm Deletion</v-card-title>
-				<v-card-text>Are you sure you want to delete this conversation?</v-card-text>
+				<v-card-title class="headline">{{ $t('confirmDeletion') }}</v-card-title>
+				<v-card-text>{{ $t('confirmDeletionMessage') }}</v-card-text>
 				<v-card-actions>
 					<v-spacer></v-spacer>
-					<v-btn text @click="deleteDialog = false">Cancel</v-btn>
-					<v-btn color="red" text @click="deleteConversation">Delete</v-btn>
+					<v-btn text @click="deleteDialog = false">{{ $t('cancel') }}</v-btn>
+					<v-btn color="red" text @click="deleteConversation">{{ $t('delete') }}</v-btn>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
 		<v-dialog v-model="renameDialog" max-width="400">
 			<v-card>
-				<v-card-title class="headline">Rename Conversation</v-card-title>
+				<v-card-title class="headline">{{ $t('renameConversation') }}</v-card-title>
 				<v-card-text>
-					<v-text-field v-model="newName" label="New Name" />
+					<v-text-field v-model="newName" :label="$t('newName')" />
 				</v-card-text>
 				<v-card-actions>
 					<v-spacer></v-spacer>
-					<v-btn text @click="renameDialog = false">Cancel</v-btn>
-					<v-btn color="blue" text @click="renameConversation">Rename</v-btn>
+					<v-btn text @click="renameDialog = false">{{ $t('cancel') }}</v-btn>
+					<v-btn color="blue" text @click="renameConversation">{{ $t('rename') }}</v-btn>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>

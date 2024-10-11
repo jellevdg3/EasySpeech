@@ -49,10 +49,7 @@ export default {
 	width: 100%;
 	max-width: 1024px;
 	margin: 0 auto;
-}
-
-.v-textarea textarea {
-	max-height: calc(1.5em * 10);
-	overflow-y: auto;
+	padding: 16px;
+	box-sizing: border-box;
 }
 </style>
