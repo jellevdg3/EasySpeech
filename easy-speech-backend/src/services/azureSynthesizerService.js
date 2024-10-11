@@ -45,7 +45,6 @@ class azureSynthesizerService {
 		}
 
 		return synthesizerCacheService.getOrSet(this.serviceName, voice, language, text, speed, async () => {
-			console.log(langCode);
 			const isMultilingualNeural = voice.includes('MultilingualNeural');
 			const escapedText = this.escapeXml(text);
 			let ssml = `
@@ -83,7 +82,7 @@ class azureSynthesizerService {
 				const errorDetails = await response.text();
 				const error = new Error('Error from Azure TTS service.');
 				error.status = response.status;
-				error.details = errorDetails;
+				error.details = response.statusText + errorDetails;
 				throw error;
 			}
 			const audioBuffer = await response.buffer();
