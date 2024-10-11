@@ -1,18 +1,18 @@
 <template>
 	<v-dialog v-model="localDialog" max-width="400">
 		<v-card>
-			<v-card-title>Settings</v-card-title>
+			<v-card-title>Instellingen</v-card-title>
 			<v-card-text>
-				<v-select :items="voices" label="Select Voice" v-model="localSelectedVoice"></v-select>
-				<v-select :items="languages" label="Select Language" v-model="localLanguage" class="mt-4"></v-select>
-				<v-slider v-model="localSpeed" label="Voice Speed" :min="-100" :max="100" step="10" :ticks="{ size: 4 }"
+				<v-select :items="voices" label="Selecteer Stem" v-model="localSelectedVoice"></v-select>
+				<v-select :items="languages" label="Selecteer Taal" v-model="localLanguage" class="mt-4"></v-select>
+				<v-slider v-model="localSpeed" label="Stem Snelheid" :min="-100" :max="100" step="10" :ticks="{ size: 4 }"
 					:thumb-label="true" class="mt-4">
 					<template v-slot:append>
 						<span>{{ localSpeed }}%</span>
 					</template>
 				</v-slider>
 				<v-row align="center" class="ml-2">
-					<span class="mr-2 label-color">Theme</span>
+					<span class="mr-2 label-color">Thema</span>
 					<v-icon left class="ml-6 mr-2">mdi-weather-sunny</v-icon>
 					<v-switch v-model="localDarkTheme" class="mt-6" />
 					<v-icon right class="ml-2">mdi-weather-night</v-icon>
@@ -20,7 +20,7 @@
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer></v-spacer>
-				<v-btn text @click="closeDialog">Close</v-btn>
+				<v-btn text @click="closeDialog">Sluiten</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>

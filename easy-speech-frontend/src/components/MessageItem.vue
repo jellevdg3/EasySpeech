@@ -12,10 +12,10 @@
 				</template>
 				<v-list>
 					<v-list-item @click="openEditDialog">
-						<v-list-item-title>Edit</v-list-item-title>
+						<v-list-item-title>Bewerken</v-list-item-title>
 					</v-list-item>
 					<v-list-item @click="deleteMessage">
-						<v-list-item-title>Delete</v-list-item-title>
+						<v-list-item-title>Verwijderen</v-list-item-title>
 					</v-list-item>
 				</v-list>
 			</v-menu>
@@ -49,16 +49,16 @@
 			<v-dialog v-model="editDialog" max-width="600px">
 				<v-card>
 					<v-card-title>
-						<span class="headline">Edit Message</span>
+						<span class="headline">Bericht Bewerken</span>
 					</v-card-title>
 					<v-card-text>
-						<v-textarea v-model="editedText" :rules="[v => !!v || 'Message cannot be empty']"
-							label="Message" auto-grow></v-textarea>
+						<v-textarea v-model="editedText" :rules="[v => !!v || 'Bericht kan niet leeg zijn']"
+							label="Bericht" auto-grow></v-textarea>
 					</v-card-text>
 					<v-card-actions>
 						<v-spacer></v-spacer>
-						<v-btn color="blue darken-1" text @click="closeEditDialog">Cancel</v-btn>
-						<v-btn color="blue darken-1" text @click="saveEdit" :disabled="!editedText">Save</v-btn>
+						<v-btn color="blue darken-1" text @click="closeEditDialog">Annuleren</v-btn>
+						<v-btn color="blue darken-1" text @click="saveEdit" :disabled="!editedText">Opslaan</v-btn>
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
