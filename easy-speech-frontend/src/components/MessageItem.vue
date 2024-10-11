@@ -45,23 +45,7 @@
 				</template>
 			</v-card-text>
 
-			<v-dialog v-model="editDialog" max-width="600px">
-				<v-card>
-					<v-card-title>
-						<span class="headline">{{ $t('editMessage') }}</span>
-					</v-card-title>
-					<v-card-text>
-						<v-textarea v-model="editedText" :rules="[v => !!v || $t('typeMessage')]"
-							label="{{ $t('editMessage') }}" auto-grow></v-textarea>
-					</v-card-text>
-					<v-card-actions>
-						<v-spacer></v-spacer>
-						<v-btn color="blue darken-1" text @click="closeEditDialog">{{ $t('cancel') }}</v-btn>
-						<v-btn color="blue darken-1" text @click="saveEdit" :disabled="!editedText">{{ $t('save')
-							}}</v-btn>
-					</v-card-actions>
-				</v-card>
-			</v-dialog>
+			<EditMessageDialog v-model="editDialog" :initialText="message.text" @edit="saveEdit" />
 		</v-card>
 	</div>
 </template>
@@ -69,12 +53,14 @@
 <script>
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import MessageItemSpeech from './MessageItemSpeech.vue';
+import EditMessageDialog from './EditMessageDialog.vue';
 import { useI18n } from 'vue-i18n';
 
 export default {
 	name: 'MessageItem',
 	components: {
 		MessageItemSpeech,
+		EditMessageDialog,
 	},
 	props: {
 		message: {
@@ -91,7 +77,6 @@ export default {
 			hoverHighlightIndex: null,
 			playingHighlightIndex: null,
 			editDialog: false,
-			editedText: '',
 			isPlaying: false,
 			clickTimeout: null,
 			clickDelay: 300,
@@ -181,17 +166,11 @@ export default {
 			this.playSingleSentence(partIndex);
 		},
 		openEditDialog() {
-			this.editedText = this.message.text;
 			this.editDialog = true;
 		},
-		closeEditDialog() {
-			this.editDialog = false;
-			this.editedText = '';
-		},
-		saveEdit() {
-			const updatedMessage = { ...this.message, text: this.editedText };
+		saveEdit(newText) {
+			const updatedMessage = { ...this.message, text: newText };
 			this.$emit('edit', updatedMessage);
-			this.closeEditDialog();
 		},
 		deleteMessage() {
 			this.$emit('delete', this.message);
