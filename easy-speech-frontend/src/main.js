@@ -19,6 +19,8 @@ const i18n = createI18n({
 	messages,
 });
 
+LocalDatabaseService.remove('messages');
+
 const savedDarkTheme = LocalDatabaseService.load('darkTheme');
 let isDark = false;
 

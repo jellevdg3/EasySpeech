@@ -16,15 +16,10 @@
 			</v-btn>
 		</v-app-bar>
 
-		<ConversationList 
-			:conversations="conversations" 
-			:currentConversation="currentConversation"
-			@add-conversation="addConversation"
-			@select-conversation="selectConversation"
-			@delete-conversation="deleteConversation"
-			v-model:drawer="drawer"
-			:isMobile="isMobile"
-		/>
+		<ConversationList :conversations="conversations" :currentConversation="currentConversation"
+			@add-conversation="addConversation" @select-conversation="selectConversation"
+			@delete-conversation="deleteConversation" @rename-conversation="renameConversation" v-model:drawer="drawer"
+			:isMobile="isMobile" />
 
 		<v-main>
 			<v-container fluid class="d-flex flex-column justify-center items-center chat-container"
@@ -131,7 +126,7 @@ export default {
 		};
 
 		const loadConversations = () => {
-			const savedConversations = LocalDatabaseService.load('conversations');
+			const savedConversations = LocalDatabaseService.loadCompressed('conversations');
 			if (savedConversations && Array.isArray(savedConversations)) {
 				conversations.value = savedConversations.map(conv => {
 					if (!conv.id) {
@@ -139,7 +134,7 @@ export default {
 					}
 					return conv;
 				});
-				LocalDatabaseService.save('conversations', conversations.value);
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			}
 
 			if (conversations.value.length === 0) {
@@ -166,7 +161,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 						]
 					}
 				];
-				LocalDatabaseService.save('conversations', conversations.value);
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			}
 			const savedConvId = LocalDatabaseService.load('selectedConversationId');
 			if (savedConvId) {
@@ -213,13 +208,13 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 				text: newMessage.value
 			};
 			currentConversation.value.messages.push(newMsg);
-			
+
 			if (/^Conversation \d+$/.test(currentConversation.value.name)) {
 				const firstWords = stripFormatting(newMsg.text).split(' ').slice(0, 3).join(' ');
 				currentConversation.value.name = firstWords || currentConversation.value.name;
 			}
 
-			LocalDatabaseService.save('conversations', conversations.value);
+			LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			newMessage.value = '';
 			nextTick(() => {
 				if (messageList.value && typeof messageList.value.scrollToBottom === 'function') {
@@ -235,7 +230,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 				messages: []
 			};
 			conversations.value.push(newConv);
-			LocalDatabaseService.save('conversations', conversations.value);
+			LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			currentConversation.value = newConv;
 			selectedConversationId.value = newConv.id;
 			LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
@@ -257,11 +252,22 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			const index = conversations.value.findIndex(conv => conv.id === convId);
 			if (index !== -1) {
 				conversations.value.splice(index, 1);
-				LocalDatabaseService.save('conversations', conversations.value);
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
 				if (currentConversation.value.id === convId) {
 					currentConversation.value = conversations.value[0] || null;
 					selectedConversationId.value = currentConversation.value ? currentConversation.value.id : null;
 					LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
+				}
+			}
+		};
+
+		const renameConversation = (convId, newName) => {
+			const conv = conversations.value.find(c => c.id === convId);
+			if (conv) {
+				conv.name = newName;
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
+				if (currentConversation.value.id === convId) {
+					currentConversation.value = conv;
 				}
 			}
 		};
@@ -293,7 +299,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			const index = currentConversation.value.messages.findIndex(msg => msg.id === updatedMessage.id);
 			if (index !== -1) {
 				currentConversation.value.messages.splice(index, 1, updatedMessage);
-				LocalDatabaseService.save('conversations', conversations.value);
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			}
 		};
 
@@ -301,7 +307,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			const index = currentConversation.value.messages.findIndex(msg => msg.id === message.id);
 			if (index !== -1) {
 				currentConversation.value.messages.splice(index, 1);
-				LocalDatabaseService.save('conversations', conversations.value);
+				LocalDatabaseService.saveCompressed('conversations', conversations.value);
 			}
 		};
 
@@ -358,6 +364,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			addConversation,
 			selectConversation,
 			deleteConversation,
+			renameConversation,
 			updateSelectedVoice,
 			updateSelectedLanguage,
 			updateSelectedSpeed,

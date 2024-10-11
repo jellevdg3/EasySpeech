@@ -10,15 +10,21 @@
 					</v-btn>
 				</div>
 			</v-list-item>
-			<v-divider></v-divider>
+			<v-divider class="mb-2"></v-divider>
 			<v-list-item v-for="(conv) in conversations" :key="conv.id" :active="conv.id === currentConversation?.id"
 				@click="selectConversation(conv)">
 				<div class="d-flex justify-space-between align-center" style="width: 100%;">
 					<v-list-item-title>{{ conv.name }}</v-list-item-title>
-					<v-btn icon size="small" class="elevation-0" style="background-color: transparent;"
-						@click.stop="confirmDelete(conv)">
-						<v-icon size="small">mdi-trash-can</v-icon>
-					</v-btn>
+					<div>
+						<v-btn icon size="small" class="elevation-0" style="background-color: transparent;"
+							@click.stop="openRenameDialog(conv)">
+							<v-icon size="small">mdi-pencil</v-icon>
+						</v-btn>
+						<v-btn icon size="small" class="elevation-0" style="background-color: transparent;"
+							@click.stop="confirmDelete(conv)">
+							<v-icon size="small">mdi-trash-can</v-icon>
+						</v-btn>
+					</div>
 				</div>
 			</v-list-item>
 		</v-list>
@@ -30,6 +36,19 @@
 					<v-spacer></v-spacer>
 					<v-btn text @click="deleteDialog = false">Cancel</v-btn>
 					<v-btn color="red" text @click="deleteConversation">Delete</v-btn>
+				</v-card-actions>
+			</v-card>
+		</v-dialog>
+		<v-dialog v-model="renameDialog" max-width="400">
+			<v-card>
+				<v-card-title class="headline">Rename Conversation</v-card-title>
+				<v-card-text>
+					<v-text-field v-model="newName" label="New Name" />
+				</v-card-text>
+				<v-card-actions>
+					<v-spacer></v-spacer>
+					<v-btn text @click="renameDialog = false">Cancel</v-btn>
+					<v-btn color="blue" text @click="renameConversation">Rename</v-btn>
 				</v-card-actions>
 			</v-card>
 		</v-dialog>
@@ -62,6 +81,9 @@ export default {
 	setup(props, { emit }) {
 		const deleteDialog = ref(false);
 		const conversationToDelete = ref(null);
+		const renameDialog = ref(false);
+		const conversationToRename = ref(null);
+		const newName = ref('');
 
 		const confirmDelete = (conv) => {
 			conversationToDelete.value = conv;
@@ -76,6 +98,21 @@ export default {
 			deleteDialog.value = false;
 		};
 
+		const openRenameDialog = (conv) => {
+			conversationToRename.value = conv;
+			newName.value = conv.name;
+			renameDialog.value = true;
+		};
+
+		const renameConversation = () => {
+			if (conversationToRename.value && newName.value.trim() !== '') {
+				emit('rename-conversation', conversationToRename.value.id, newName.value.trim());
+				conversationToRename.value = null;
+				newName.value = '';
+			}
+			renameDialog.value = false;
+		};
+
 		const selectConversation = (conv) => {
 			emit('select-conversation', conv);
 		};
@@ -85,6 +122,11 @@ export default {
 			conversationToDelete,
 			confirmDelete,
 			deleteConversation,
+			renameDialog,
+			conversationToRename,
+			newName,
+			openRenameDialog,
+			renameConversation,
 			selectConversation
 		};
 	}
