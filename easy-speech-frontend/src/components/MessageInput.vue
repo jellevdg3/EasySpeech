@@ -2,7 +2,7 @@
 	<v-form @submit.prevent="handleSubmit" class="d-flex w-full input-container">
 		<v-textarea v-model="message" rows="1" auto-grow max-rows="10" :placeholder="$t('typeMessage')"
 			class="flex-grow-1"></v-textarea>
-		<v-btn icon @click="handleSubmit">
+		<v-btn icon class="ml-2" @click="handleSubmit">
 			<v-icon>mdi-send</v-icon>
 		</v-btn>
 	</v-form>

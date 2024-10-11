@@ -1,45 +1,73 @@
 <template>
-	<v-container fluid class="d-flex flex-column justify-center items-center chat-container"
-		style="height: 100vh; padding: 0;">
-		<v-row class="w-full" align="center" justify="end">
+	<v-app>
+		<v-app-bar app dense>
+			<v-btn icon size="small" @click="toggleDrawer" class="d-lg-none">
+				<v-icon size="small">mdi-menu</v-icon>
+			</v-btn>
+			<v-btn icon size="small" @click="addConversation" class="d-lg-none">
+				<v-icon size="small">mdi-plus</v-icon>
+			</v-btn>
+			<v-toolbar-title class="ml-2">{{ currentConversation?.name }}</v-toolbar-title>
+			<v-spacer></v-spacer>
 			<span class="selected-voice mt-1 mr-2">{{ selectedVoice }}</span>
 			<v-btn icon tile size="small" style="background-color: transparent;" class="elevation-0"
 				@click="dialog = true">
 				<v-icon>mdi-cog</v-icon>
 			</v-btn>
-		</v-row>
-		<MessageList ref="messageList" :messages="messages" class="flex-grow-1 overflow-y-auto"
-			@edit="handleEditMessage" @delete="handleDeleteMessage" />
-		<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
-		<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
-			:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
-			:language="selectedLanguage" @update:language="updateSelectedLanguage($event)"
-			:selectedSpeed="selectedSpeed" @update:selectedSpeed="updateSelectedSpeed($event)" :darkTheme="darkTheme"
-			@update:darkTheme="updateDarkTheme($event)" />
-	</v-container>
+		</v-app-bar>
+
+		<ConversationList 
+			:conversations="conversations" 
+			:currentConversation="currentConversation"
+			@add-conversation="addConversation"
+			@select-conversation="selectConversation"
+			@delete-conversation="deleteConversation"
+			v-model:drawer="drawer"
+			:isMobile="isMobile"
+		/>
+
+		<v-main>
+			<v-container fluid class="d-flex flex-column justify-center items-center chat-container"
+				style="height: calc(100vh - 64px); padding: 0;">
+				<MessageList ref="messageList" :messages="currentConversation?.messages || []"
+					class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage" @delete="handleDeleteMessage" />
+				<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
+				<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
+					:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
+					:language="selectedLanguage" @update:language="updateSelectedLanguage($event)"
+					:selectedSpeed="selectedSpeed" @update:selectedSpeed="updateSelectedSpeed($event)"
+					:darkTheme="darkTheme" @update:darkTheme="updateDarkTheme($event)" />
+			</v-container>
+		</v-main>
+	</v-app>
 </template>
 
 <script>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, watch, nextTick, computed } from 'vue';
 import MessageList from './MessageList.vue';
 import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
+import ConversationList from './ConversationList.vue';
 import LocalDatabaseService from '../services/LocalDatabaseService.js';
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import GuidUtils from '../utils/GuidUtils.js';
 import { useTheme } from 'vuetify';
 import { useI18n } from 'vue-i18n';
 import { messages as localeMessages } from '../locales.js';
+import { useDisplay } from 'vuetify';
+import { stripFormatting } from '../utils/TextUtils.js';
 
 export default {
 	name: 'ChatInterface',
 	components: {
 		MessageList,
 		MessageInput,
-		SettingsDialog
+		SettingsDialog,
+		ConversationList
 	},
 	setup() {
-		const messages = ref([]);
+		const conversations = ref([]);
+		const currentConversation = ref(null);
 		const newMessage = ref('');
 		const dialog = ref(false);
 		const selectedVoice = ref('');
@@ -50,6 +78,10 @@ export default {
 		const theme = useTheme();
 		const { locale } = useI18n();
 		const messageList = ref(null);
+		const { mobile } = useDisplay();
+		const isMobile = computed(() => mobile.value);
+		const drawer = ref(!isMobile.value);
+		const selectedConversationId = ref(null);
 
 		const languageMapping = {
 			'Nederlands': 'nl',
@@ -81,7 +113,7 @@ export default {
 				savedLanguageName = reverseLanguageMapping[Object.prototype.hasOwnProperty.call(localeMessages, systemLocale) ? systemLocale : 'en'];
 			}
 			selectedLanguage.value = savedLanguageName;
-			locale.value = mapLanguageToLocale(selectedLanguage.value);
+			locale.value = mapLanguageToLocale(savedLanguageName);
 			if (savedVoice && voices.value.includes(savedVoice)) {
 				selectedVoice.value = savedVoice;
 			} else if (voices.value.length > 0) {
@@ -98,24 +130,28 @@ export default {
 			SpeechSynthesisService.setLanguage(selectedLanguage.value);
 		};
 
-		const loadMessages = () => {
-			const savedMessages = LocalDatabaseService.load('messages');
-			if (savedMessages && Array.isArray(savedMessages)) {
-				messages.value = savedMessages.map(msg => {
-					if (!msg.id) {
-						return { ...msg, id: GuidUtils.generateGuid() };
+		const loadConversations = () => {
+			const savedConversations = LocalDatabaseService.load('conversations');
+			if (savedConversations && Array.isArray(savedConversations)) {
+				conversations.value = savedConversations.map(conv => {
+					if (!conv.id) {
+						return { ...conv, id: GuidUtils.generateGuid() };
 					}
-					return msg;
+					return conv;
 				});
-				LocalDatabaseService.save('messages', messages.value);
+				LocalDatabaseService.save('conversations', conversations.value);
 			}
 
-			if (messages.value.length === 0) {
-				messages.value = [
+			if (conversations.value.length === 0) {
+				conversations.value = [
 					{
 						id: GuidUtils.generateGuid(),
-						sender: 'bot',
-						text: `**De Kleine Robot en de Verdwaalde Kat**
+						name: 'Conversation 1',
+						messages: [
+							{
+								id: GuidUtils.generateGuid(),
+								sender: 'bot',
+								text: `**De Kleine Robot en de Verdwaalde Kat**
 
 Er was eens een kleine robot genaamd Bolt, die leefde in een stad vol wolkenkrabbers en vliegende auto's. Hoewel Bolt heel slim en sterk was, voelde hij zich vaak eenzaam. Op een dag, terwijl hij door een verlaten park liep, hoorde hij een zacht gemiauw. Verrast keek hij om zich heen en zag een kleine, grijze kat die vastzat in een hoge boom.
 
@@ -126,9 +162,22 @@ De kat miauwde nog een keer, alsof hij hulp vroeg. Bolt activeerde zijn jetpacks
 Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door de stad, op zoek naar nieuwe avonturen. Bolt voelde zich nooit meer alleen, en de kat had een nieuwe vriend gevonden die altijd voor haar zorgde.
 
 "Soms," dacht Bolt, terwijl hij naar de ondergaande zon keek, "is het vinden van een vriend alles wat je nodig hebt."`
+							}
+						]
 					}
 				];
-				LocalDatabaseService.save('messages', messages.value);
+				LocalDatabaseService.save('conversations', conversations.value);
+			}
+			const savedConvId = LocalDatabaseService.load('selectedConversationId');
+			if (savedConvId) {
+				const foundConv = conversations.value.find(conv => conv.id === savedConvId);
+				currentConversation.value = foundConv || conversations.value[0];
+			} else {
+				currentConversation.value = conversations.value[0];
+			}
+			if (currentConversation.value) {
+				selectedConversationId.value = currentConversation.value.id;
+				LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
 			}
 		};
 
@@ -163,8 +212,14 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 				sender: 'user',
 				text: newMessage.value
 			};
-			messages.value.push(newMsg);
-			LocalDatabaseService.save('messages', messages.value);
+			currentConversation.value.messages.push(newMsg);
+			
+			if (/^Conversation \d+$/.test(currentConversation.value.name)) {
+				const firstWords = stripFormatting(newMsg.text).split(' ').slice(0, 3).join(' ');
+				currentConversation.value.name = firstWords || currentConversation.value.name;
+			}
+
+			LocalDatabaseService.save('conversations', conversations.value);
 			newMessage.value = '';
 			nextTick(() => {
 				if (messageList.value && typeof messageList.value.scrollToBottom === 'function') {
@@ -173,18 +228,59 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			});
 		};
 
+		const addConversation = () => {
+			const newConv = {
+				id: GuidUtils.generateGuid(),
+				name: `Conversation ${conversations.value.length + 1}`,
+				messages: []
+			};
+			conversations.value.push(newConv);
+			LocalDatabaseService.save('conversations', conversations.value);
+			currentConversation.value = newConv;
+			selectedConversationId.value = newConv.id;
+			LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
+			if (isMobile.value) {
+				drawer.value = false;
+			}
+		};
+
+		const selectConversation = (conv) => {
+			currentConversation.value = conv;
+			selectedConversationId.value = conv.id;
+			LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
+			if (isMobile.value) {
+				drawer.value = false;
+			}
+		};
+
+		const deleteConversation = (convId) => {
+			const index = conversations.value.findIndex(conv => conv.id === convId);
+			if (index !== -1) {
+				conversations.value.splice(index, 1);
+				LocalDatabaseService.save('conversations', conversations.value);
+				if (currentConversation.value.id === convId) {
+					currentConversation.value = conversations.value[0] || null;
+					selectedConversationId.value = currentConversation.value ? currentConversation.value.id : null;
+					LocalDatabaseService.save('selectedConversationId', selectedConversationId.value);
+				}
+			}
+		};
+
 		const updateSelectedVoice = (newVoice) => {
 			selectedVoice.value = newVoice;
+			LocalDatabaseService.save('selectedVoice', newVoice);
 		};
 
 		const updateSelectedLanguage = (newLanguage) => {
 			selectedLanguage.value = newLanguage;
 			locale.value = mapLanguageToLocale(newLanguage);
 			SpeechSynthesisService.setLanguage(newLanguage);
+			LocalDatabaseService.save('language', languageMapping[newLanguage]);
 		};
 
 		const updateSelectedSpeed = (newSpeed) => {
 			selectedSpeed.value = newSpeed;
+			LocalDatabaseService.save('selectedSpeed', newSpeed);
 		};
 
 		const updateDarkTheme = (newTheme) => {
@@ -194,18 +290,18 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		};
 
 		const handleEditMessage = (updatedMessage) => {
-			const index = messages.value.findIndex(msg => msg.id === updatedMessage.id);
+			const index = currentConversation.value.messages.findIndex(msg => msg.id === updatedMessage.id);
 			if (index !== -1) {
-				messages.value.splice(index, 1, updatedMessage);
-				LocalDatabaseService.save('messages', messages.value);
+				currentConversation.value.messages.splice(index, 1, updatedMessage);
+				LocalDatabaseService.save('conversations', conversations.value);
 			}
 		};
 
 		const handleDeleteMessage = (message) => {
-			const index = messages.value.findIndex(msg => msg.id === message.id);
+			const index = currentConversation.value.messages.findIndex(msg => msg.id === message.id);
 			if (index !== -1) {
-				messages.value.splice(index, 1);
-				LocalDatabaseService.save('messages', messages.value);
+				currentConversation.value.messages.splice(index, 1);
+				LocalDatabaseService.save('conversations', conversations.value);
 			}
 		};
 
@@ -227,7 +323,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 
 		onMounted(() => {
 			loadVoices();
-			loadMessages();
+			loadConversations();
 			loadSpeed();
 			loadTheme();
 		});
@@ -236,8 +332,21 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			LocalDatabaseService.save('language', languageMapping[newLang]);
 		});
 
+		watch(isMobile, (val) => {
+			if (!val) {
+				drawer.value = true;
+			} else {
+				drawer.value = false;
+			}
+		});
+
+		const toggleDrawer = () => {
+			drawer.value = !drawer.value;
+		};
+
 		return {
-			messages,
+			conversations,
+			currentConversation,
 			newMessage,
 			dialog,
 			selectedVoice,
@@ -246,13 +355,19 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			selectedSpeed,
 			darkTheme,
 			sendMessage,
+			addConversation,
+			selectConversation,
+			deleteConversation,
 			updateSelectedVoice,
 			updateSelectedLanguage,
 			updateSelectedSpeed,
 			updateDarkTheme,
 			handleEditMessage,
 			handleDeleteMessage,
-			messageList
+			messageList,
+			drawer,
+			isMobile,
+			toggleDrawer
 		};
 	}
 }
@@ -270,5 +385,9 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 
 .selected-voice {
 	font-weight: bold;
+}
+
+.conversation-drawer {
+	width: 250px;
 }
 </style>

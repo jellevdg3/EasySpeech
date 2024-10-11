@@ -1,6 +1,7 @@
 import LocalSpeechSynthesiser from './LocalSpeechSynthesiser.js';
 import RemoteSpeechSynthesiser from './RemoteSpeechSynthesiser.js';
 import LocalDatabaseService from './LocalDatabaseService.js';
+import { stripFormatting } from '../utils/TextUtils.js';
 
 const localBuildInVoice = "Local - Build in";
 const remoteVoices = [
@@ -41,27 +42,10 @@ class SpeechSynthesisService {
 		return [...localVoices, ...remoteDisplayNames];
 	}
 
-	/**
-	 * Strips markdown-like formatting from the text.
-	 * Removes **bold**, *italic*, and other similar markers.
-	 * @param {string} text - The formatted text.
-	 * @returns {string} - The plain text without formatting.
-	 */
-	stripFormatting(text) {
-		return text
-			.replace(/\*\*(.*?)\*\*/g, '$1') // Remove **bold**
-			.replace(/\*(.*?)\*/g, '$1')     // Remove *italic*
-			.replace(/#{1,6}\s+(.*)/g, '$1') // Remove Markdown headings
-			.replace(/`{1,3}(.*?)`{1,3}/g, '$1') // Remove inline code
-			.replace(/\[(.*?)\]\(.*?\)/g, '$1') // Remove markdown links
-			.replace(/!\[.*?\]\(.*?\)/g, '') // Remove markdown images
-			.trim();
-	}
-
 	async speakText(text, onBoundary, onEnd, onError) {
-		const plainText = this.stripFormatting(text);
+		const plainText = stripFormatting(text);
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
-		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
+		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0;
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
 			await this.remoteSynthesiser.speakText(remoteVoice.actualName, plainText, this.language, selectedSpeed, onEnd, onError);
@@ -71,9 +55,9 @@ class SpeechSynthesisService {
 	}
 
 	async preloadText(text) {
-		const plainText = this.stripFormatting(text);
+		const plainText = stripFormatting(text);
 		const selectedVoiceName = LocalDatabaseService.load('selectedVoice') || localBuildInVoice;
-		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0; // Load speed
+		const selectedSpeed = LocalDatabaseService.load('selectedSpeed') || 0;
 		const remoteVoice = remoteVoices.find(v => v.displayName === selectedVoiceName);
 		if (remoteVoice) {
 			await this.remoteSynthesiser.preloadText(remoteVoice.actualName, plainText, this.language, selectedSpeed);
