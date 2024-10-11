@@ -3,27 +3,31 @@
 		style="height: 100vh; padding: 0;">
 		<v-row class="w-full" align="center" justify="end">
 			<span class="selected-voice mt-1 mr-2">{{ selectedVoice }}</span>
-			<v-btn icon @click="dialog = true">
+			<v-btn icon tile size="small" style="background-color: transparent;" class="elevation-0"
+				@click="dialog = true">
 				<v-icon>mdi-cog</v-icon>
 			</v-btn>
 		</v-row>
-		<MessageList ref="messageList" :messages="messages" class="flex-grow-1 overflow-y-auto" @edit="handleEditMessage"
-			@delete="handleDeleteMessage" />
+		<MessageList ref="messageList" :messages="messages" class="flex-grow-1 overflow-y-auto"
+			@edit="handleEditMessage" @delete="handleDeleteMessage" />
 		<MessageInput v-model="newMessage" @send="sendMessage" class="input-area" />
 		<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
 			:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
 			:language="selectedLanguage" @update:language="updateSelectedLanguage($event)"
-			:selectedSpeed="selectedSpeed" @update:selectedSpeed="updateSelectedSpeed($event)" />
+			:selectedSpeed="selectedSpeed" @update:selectedSpeed="updateSelectedSpeed($event)" :darkTheme="darkTheme"
+			@update:darkTheme="updateDarkTheme($event)" />
 	</v-container>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
 import MessageList from './MessageList.vue';
 import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
 import LocalDatabaseService from '../services/LocalDatabaseService.js';
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import GuidUtils from '../utils/GuidUtils.js';
+import { useTheme } from 'vuetify';
 
 export default {
 	name: 'ChatInterface',
@@ -32,79 +36,58 @@ export default {
 		MessageInput,
 		SettingsDialog
 	},
-	data() {
-		return {
-			messages: [],
-			newMessage: '',
-			dialog: false,
-			selectedVoice: '',
-			selectedLanguage: 'Nederlands',
-			voices: [],
-			selectedSpeed: 0 // Added for voice speed
-		}
-	},
-	mounted() {
-		this.loadVoices();
-		this.loadMessages();
-		this.loadSpeed(); // Load speed on mount
-	},
-	beforeUnmount() {
-		// No event listeners to remove since the service handles them
-	},
-	watch: {
-		selectedVoice(newVal) {
-			LocalDatabaseService.save('selectedVoice', newVal);
-		},
-		selectedLanguage(newVal) {
-			LocalDatabaseService.save('selectedLanguage', newVal);
-			SpeechSynthesisService.setLanguage(newVal);
-		},
-		selectedSpeed(newVal) { // Watcher for selectedSpeed
-			LocalDatabaseService.save('selectedSpeed', newVal);
-		}
-	},
-	methods: {
-		async loadVoices() {
-			this.voices = await SpeechSynthesisService.getVoicesList();
+	setup() {
+		const messages = ref([]);
+		const newMessage = ref('');
+		const dialog = ref(false);
+		const selectedVoice = ref('');
+		const selectedLanguage = ref('Nederlands');
+		const voices = ref([]);
+		const selectedSpeed = ref(0);
+		const darkTheme = ref(false);
+		const theme = useTheme();
+
+		const loadVoices = async () => {
+			voices.value = await SpeechSynthesisService.getVoicesList();
 			const savedVoice = LocalDatabaseService.load('selectedVoice');
 			const savedLanguage = LocalDatabaseService.load('selectedLanguage');
 			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
 			if (savedLanguage) {
-				this.selectedLanguage = savedLanguage;
+				selectedLanguage.value = savedLanguage;
 			} else {
-				this.selectedLanguage = 'Nederlands';
+				selectedLanguage.value = 'Nederlands';
 			}
-			if (savedVoice && this.voices.includes(savedVoice)) {
-				this.selectedVoice = savedVoice;
-			} else if (this.voices.length > 0) {
-				this.selectedVoice = this.voices[0];
+			if (savedVoice && voices.value.includes(savedVoice)) {
+				selectedVoice.value = savedVoice;
+			} else if (voices.value.length > 0) {
+				selectedVoice.value = voices.value[0];
 			} else {
-				this.selectedVoice = 'Standaard - Build in';
+				selectedVoice.value = 'Standaard - Build in';
 			}
 			if (savedSpeed !== null && savedSpeed !== undefined) {
-				this.selectedSpeed = savedSpeed;
+				selectedSpeed.value = savedSpeed;
 			} else {
-				this.selectedSpeed = 0; // Default speed
+				selectedSpeed.value = 0;
 			}
-			SpeechSynthesisService.setLanguage(this.selectedLanguage);
-		},
-		loadMessages() {
+			SpeechSynthesisService.setLanguage(selectedLanguage.value);
+		};
+
+		const loadMessages = () => {
 			const savedMessages = LocalDatabaseService.load('messages');
 			if (savedMessages && Array.isArray(savedMessages)) {
-				// Ensure each message has a unique id
-				this.messages = savedMessages.map(msg => {
+				messages.value = savedMessages.map(msg => {
 					if (!msg.id) {
 						return { ...msg, id: GuidUtils.generateGuid() };
 					}
 					return msg;
 				});
-				LocalDatabaseService.save('messages', this.messages);
+				LocalDatabaseService.save('messages', messages.value);
 			}
 
-			if (this.messages.length === 0) {
-				this.messages = [
+			if (messages.value.length === 0) {
+				messages.value = [
 					{
-						id: GuidUtils.generateGuid(), // Assigned unique id
+						id: GuidUtils.generateGuid(),
 						sender: 'bot',
 						text: `**De Kleine Robot en de Verdwaalde Kat**
 
@@ -119,56 +102,106 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 "Soms," dacht Bolt, terwijl hij naar de ondergaande zon keek, "is het vinden van een vriend alles wat je nodig hebt."`
 					}
 				];
-				LocalDatabaseService.save('messages', this.messages);
+				LocalDatabaseService.save('messages', messages.value);
 			}
-		},
-		loadSpeed() {
+		};
+
+		const loadSpeed = () => {
 			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
 			if (savedSpeed !== null && savedSpeed !== undefined) {
-				this.selectedSpeed = savedSpeed;
+				selectedSpeed.value = savedSpeed;
 			} else {
-				this.selectedSpeed = 0; // Default speed
+				selectedSpeed.value = 0;
 			}
-		},
-		sendMessage() {
-			if (this.newMessage.trim() === '') return;
+		};
+
+		const loadTheme = () => {
+			const savedTheme = LocalDatabaseService.load('darkTheme');
+			if (savedTheme !== null && savedTheme !== undefined) {
+				darkTheme.value = savedTheme;
+			} else {
+				darkTheme.value = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+				LocalDatabaseService.save('darkTheme', darkTheme.value);
+			}
+			theme.global.name.value = darkTheme.value ? 'customDark' : 'customLight';
+		};
+
+		const updateVuetifyTheme = (isDark) => {
+			theme.global.name.value = isDark ? 'customDark' : 'customLight';
+		};
+
+		const sendMessage = () => {
+			if (newMessage.value.trim() === '') return;
 			const newMsg = {
 				id: GuidUtils.generateGuid(),
 				sender: 'user',
-				text: this.newMessage
+				text: newMessage.value
 			};
-			this.messages.push(newMsg);
-			LocalDatabaseService.save('messages', this.messages);
-			this.newMessage = '';
-			this.$nextTick(() => {
-				if (this.$refs.messageList) {
-					this.$refs.messageList.scrollToBottom();
-				}
-			});
-		},
-		updateSelectedVoice(newVoice) {
-			this.selectedVoice = newVoice;
-		},
-		updateSelectedLanguage(newLanguage) {
-			this.selectedLanguage = newLanguage;
-		},
-		updateSelectedSpeed(newSpeed) { // Method to update selectedSpeed
-			this.selectedSpeed = newSpeed;
-		},
-		handleEditMessage(updatedMessage) {
-			const index = this.messages.findIndex(msg => msg.id === updatedMessage.id);
+			messages.value.push(newMsg);
+			LocalDatabaseService.save('messages', messages.value);
+			newMessage.value = '';
+			// Assuming messageList has a method scrollToBottom
+			// You might need to use refs differently in setup
+		};
+
+		const updateSelectedVoice = (newVoice) => {
+			selectedVoice.value = newVoice;
+		};
+
+		const updateSelectedLanguage = (newLanguage) => {
+			selectedLanguage.value = newLanguage;
+		};
+
+		const updateSelectedSpeed = (newSpeed) => {
+			selectedSpeed.value = newSpeed;
+		};
+
+		const updateDarkTheme = (newTheme) => {
+			darkTheme.value = newTheme;
+			updateVuetifyTheme(newTheme);
+			LocalDatabaseService.save('darkTheme', newTheme);
+		};
+
+		const handleEditMessage = (updatedMessage) => {
+			const index = messages.value.findIndex(msg => msg.id === updatedMessage.id);
 			if (index !== -1) {
-				this.messages.splice(index, 1, updatedMessage);
-				LocalDatabaseService.save('messages', this.messages);
+				messages.value.splice(index, 1, updatedMessage);
+				LocalDatabaseService.save('messages', messages.value);
 			}
-		},
-		handleDeleteMessage(message) {
-			const index = this.messages.findIndex(msg => msg.id === message.id);
+		};
+
+		const handleDeleteMessage = (message) => {
+			const index = messages.value.findIndex(msg => msg.id === message.id);
 			if (index !== -1) {
-				this.messages.splice(index, 1);
-				LocalDatabaseService.save('messages', this.messages);
+				messages.value.splice(index, 1);
+				LocalDatabaseService.save('messages', messages.value);
 			}
-		}
+		};
+
+		onMounted(() => {
+			loadVoices();
+			loadMessages();
+			loadSpeed();
+			loadTheme();
+		});
+
+		return {
+			messages,
+			newMessage,
+			dialog,
+			selectedVoice,
+			selectedLanguage,
+			voices,
+			selectedSpeed,
+			darkTheme,
+			sendMessage,
+			updateSelectedVoice,
+			updateSelectedLanguage,
+			updateSelectedSpeed,
+			updateDarkTheme,
+			handleEditMessage,
+			handleDeleteMessage
+		};
 	}
 }
 </script>

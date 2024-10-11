@@ -5,12 +5,18 @@
 			<v-card-text>
 				<v-select :items="voices" label="Select Voice" v-model="localSelectedVoice"></v-select>
 				<v-select :items="languages" label="Select Language" v-model="localLanguage" class="mt-4"></v-select>
-				<v-slider v-model="localSpeed" label="Voice Speed" :min="-100" :max="100" step="10" ticks tick-size="4"
-					thumb-label="true" class="mt-4">
+				<v-slider v-model="localSpeed" label="Voice Speed" :min="-100" :max="100" step="10" :ticks="{ size: 4 }"
+					:thumb-label="true" class="mt-4">
 					<template v-slot:append>
 						<span>{{ localSpeed }}%</span>
 					</template>
 				</v-slider>
+				<v-row align="center" class="ml-2">
+					<span class="mr-2 label-color">Theme</span>
+					<v-icon left class="ml-6 mr-2">mdi-weather-sunny</v-icon>
+					<v-switch v-model="localDarkTheme" class="mt-6" />
+					<v-icon right class="ml-2">mdi-weather-night</v-icon>
+				</v-row>
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer></v-spacer>
@@ -21,6 +27,8 @@
 </template>
 
 <script>
+import { useTheme } from 'vuetify';
+
 export default {
 	name: 'SettingsDialog',
 	props: {
@@ -42,10 +50,15 @@ export default {
 			required: true,
 			default: 'Nederlands'
 		},
-		selectedSpeed: { // New prop for speed
+		selectedSpeed: {
 			type: Number,
 			required: true,
 			default: 0
+		},
+		darkTheme: {
+			type: Boolean,
+			required: true,
+			default: false
 		}
 	},
 	data() {
@@ -53,7 +66,8 @@ export default {
 			localDialog: this.dialog,
 			localSelectedVoice: this.selectedVoice,
 			localLanguage: this.language,
-			localSpeed: this.selectedSpeed, // Local data for speed
+			localSpeed: this.selectedSpeed,
+			localDarkTheme: this.darkTheme,
 			languages: [
 				'Nederlands',
 				'English',
@@ -68,6 +82,11 @@ export default {
 			]
 		}
 	},
+	setup() {
+		const theme = useTheme();
+
+		return { theme };
+	},
 	watch: {
 		dialog(newVal) {
 			this.localDialog = newVal;
@@ -77,26 +96,24 @@ export default {
 			if (!newVal) {
 				this.$emit('update:selectedVoice', this.localSelectedVoice);
 				this.$emit('update:language', this.localLanguage);
-				this.$emit('update:selectedSpeed', this.localSpeed); // Emit speed on dialog close
+				this.$emit('update:selectedSpeed', this.localSpeed);
 			}
+		},
+		localDarkTheme(newVal) {
+			this.$emit('update:darkTheme', newVal);
+			this.theme.global.name.value = newVal ? 'customDark' : 'customLight';
 		},
 		selectedVoice(newVal) {
 			this.localSelectedVoice = newVal;
 		},
-		localSelectedVoice(newVal) {
-			this.$emit('update:selectedVoice', newVal);
-		},
 		language(newVal) {
 			this.localLanguage = newVal;
 		},
-		localLanguage(newVal) {
-			this.$emit('update:language', newVal);
-		},
-		selectedSpeed(newVal) { // Watcher for external speed changes
+		selectedSpeed(newVal) {
 			this.localSpeed = newVal;
 		},
-		localSpeed(newVal) { // Emit speed changes
-			this.$emit('update:selectedSpeed', newVal);
+		darkTheme(newVal) {
+			this.localDarkTheme = newVal;
 		}
 	},
 	methods: {
@@ -110,5 +127,14 @@ export default {
 <style scoped>
 .mt-4 {
 	margin-top: 16px;
+}
+
+.mr-2 {
+	margin-right: 8px;
+}
+
+.label-color {
+	color: rgba(var(--v-theme-on-surface), var(--v-high-emphasis-opacity));
+	opacity: var(--v-medium-emphasis-opacity);
 }
 </style>
