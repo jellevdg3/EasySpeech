@@ -1,6 +1,6 @@
 <template>
 	<v-form @submit.prevent="handleSubmit" class="d-flex w-full input-container">
-		<v-textarea v-model="message" rows="1" auto-grow max-rows="10" placeholder="Typ je bericht..."
+		<v-textarea v-model="message" rows="1" auto-grow max-rows="10" :placeholder="$t('typeMessage')"
 			class="flex-grow-1"></v-textarea>
 		<v-btn icon @click="handleSubmit">
 			<v-icon>mdi-send</v-icon>
@@ -9,6 +9,8 @@
 </template>
 
 <script>
+import { useI18n } from 'vue-i18n';
+
 export default {
 	name: 'MessageInput',
 	props: {
@@ -21,6 +23,10 @@ export default {
 		return {
 			message: this.modelValue
 		}
+	},
+	setup() {
+		const { t } = useI18n();
+		return { t };
 	},
 	watch: {
 		modelValue(val) {

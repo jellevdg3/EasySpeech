@@ -3,6 +3,7 @@ body::-webkit-scrollbar {
 }
 
 body {
+    overflow: hidden;
     -ms-overflow-style: none;
     scrollbar-width: none;
 }
@@ -12,6 +13,11 @@ html::-webkit-scrollbar {
 }
 
 html {
+    overflow: hidden;
     -ms-overflow-style: none;
     scrollbar-width: none;
+}
+
+.v-input__details {
+	display: none;
 }

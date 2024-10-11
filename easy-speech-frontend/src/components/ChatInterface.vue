@@ -20,7 +20,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch, nextTick } from 'vue';
 import MessageList from './MessageList.vue';
 import MessageInput from './MessageInput.vue';
 import SettingsDialog from './SettingsDialog.vue';
@@ -28,6 +28,8 @@ import LocalDatabaseService from '../services/LocalDatabaseService.js';
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import GuidUtils from '../utils/GuidUtils.js';
 import { useTheme } from 'vuetify';
+import { useI18n } from 'vue-i18n';
+import { messages as localeMessages } from '../locales.js';
 
 export default {
 	name: 'ChatInterface',
@@ -41,22 +43,45 @@ export default {
 		const newMessage = ref('');
 		const dialog = ref(false);
 		const selectedVoice = ref('');
-		const selectedLanguage = ref('Nederlands');
+		const selectedLanguage = ref('English');
 		const voices = ref([]);
 		const selectedSpeed = ref(0);
 		const darkTheme = ref(false);
 		const theme = useTheme();
+		const { locale } = useI18n();
+		const messageList = ref(null);
+
+		const languageMapping = {
+			'Nederlands': 'nl',
+			'English': 'en',
+			'Spanish': 'es',
+			'French': 'fr',
+			'German': 'de',
+			'Chinese': 'zh',
+			'Japanese': 'ja',
+			'Russian': 'ru',
+			'Italian': 'it',
+			'Portuguese': 'pt'
+		};
+
+		const reverseLanguageMapping = Object.keys(languageMapping).reduce((acc, key) => {
+			acc[languageMapping[key]] = key;
+			return acc;
+		}, {});
 
 		const loadVoices = async () => {
 			voices.value = await SpeechSynthesisService.getVoicesList();
 			const savedVoice = LocalDatabaseService.load('selectedVoice');
-			const savedLanguage = LocalDatabaseService.load('selectedLanguage');
-			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
-			if (savedLanguage) {
-				selectedLanguage.value = savedLanguage;
+			const savedLanguageCode = LocalDatabaseService.load('language');
+			let savedLanguageName = reverseLanguageMapping[savedLanguageCode] || 'English';
+			const systemLocale = navigator.language.split('-')[0];
+			if (savedLanguageCode && Object.prototype.hasOwnProperty.call(localeMessages, savedLanguageCode)) {
+				savedLanguageName = reverseLanguageMapping[savedLanguageCode];
 			} else {
-				selectedLanguage.value = 'Nederlands';
+				savedLanguageName = reverseLanguageMapping[Object.prototype.hasOwnProperty.call(localeMessages, systemLocale) ? systemLocale : 'en'];
 			}
+			selectedLanguage.value = savedLanguageName;
+			locale.value = mapLanguageToLocale(selectedLanguage.value);
 			if (savedVoice && voices.value.includes(savedVoice)) {
 				selectedVoice.value = savedVoice;
 			} else if (voices.value.length > 0) {
@@ -64,6 +89,7 @@ export default {
 			} else {
 				selectedVoice.value = 'Standaard - Build in';
 			}
+			const savedSpeed = LocalDatabaseService.load('selectedSpeed');
 			if (savedSpeed !== null && savedSpeed !== undefined) {
 				selectedSpeed.value = savedSpeed;
 			} else {
@@ -123,7 +149,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 				darkTheme.value = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
 				LocalDatabaseService.save('darkTheme', darkTheme.value);
 			}
-			theme.global.name.value = darkTheme.value ? 'customDark' : 'customLight';
+			updateVuetifyTheme(darkTheme.value);
 		};
 
 		const updateVuetifyTheme = (isDark) => {
@@ -140,8 +166,11 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			messages.value.push(newMsg);
 			LocalDatabaseService.save('messages', messages.value);
 			newMessage.value = '';
-			// Assuming messageList has a method scrollToBottom
-			// You might need to use refs differently in setup
+			nextTick(() => {
+				if (messageList.value && typeof messageList.value.scrollToBottom === 'function') {
+					messageList.value.scrollToBottom();
+				}
+			});
 		};
 
 		const updateSelectedVoice = (newVoice) => {
@@ -150,6 +179,8 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 
 		const updateSelectedLanguage = (newLanguage) => {
 			selectedLanguage.value = newLanguage;
+			locale.value = mapLanguageToLocale(newLanguage);
+			SpeechSynthesisService.setLanguage(newLanguage);
 		};
 
 		const updateSelectedSpeed = (newSpeed) => {
@@ -178,11 +209,31 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			}
 		};
 
+		const mapLanguageToLocale = (language) => {
+			const mapping = {
+				'Nederlands': 'nl',
+				'English': 'en',
+				'Spanish': 'es',
+				'French': 'fr',
+				'German': 'de',
+				'Chinese': 'zh',
+				'Japanese': 'ja',
+				'Russian': 'ru',
+				'Italian': 'it',
+				'Portuguese': 'pt'
+			};
+			return mapping[language] || 'en';
+		};
+
 		onMounted(() => {
 			loadVoices();
 			loadMessages();
 			loadSpeed();
 			loadTheme();
+		});
+
+		watch(selectedLanguage, (newLang) => {
+			LocalDatabaseService.save('language', languageMapping[newLang]);
 		});
 
 		return {
@@ -200,7 +251,8 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 			updateSelectedSpeed,
 			updateDarkTheme,
 			handleEditMessage,
-			handleDeleteMessage
+			handleDeleteMessage,
+			messageList
 		};
 	}
 }

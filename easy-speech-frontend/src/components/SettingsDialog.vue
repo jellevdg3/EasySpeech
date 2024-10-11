@@ -1,26 +1,27 @@
 <template>
 	<v-dialog v-model="localDialog" max-width="400">
 		<v-card>
-			<v-card-title>Instellingen</v-card-title>
+			<v-card-title>{{ $t('settings') }}</v-card-title>
 			<v-card-text>
-				<v-select :items="voices" label="Selecteer Stem" v-model="localSelectedVoice"></v-select>
-				<v-select :items="languages" label="Selecteer Taal" v-model="localLanguage" class="mt-4"></v-select>
-				<v-slider v-model="localSpeed" label="Stem Snelheid" :min="-100" :max="100" step="10" :ticks="{ size: 4 }"
-					:thumb-label="true" class="mt-4">
+				<v-select :items="voices" :label="$t('selectVoice')" v-model="localSelectedVoice"></v-select>
+				<v-select :items="languages" :label="$t('selectLanguage')" v-model="localLanguage"
+					class="mt-4"></v-select>
+				<v-slider v-model="localSpeed" :label="$t('voiceSpeed')" :min="-100" :max="100" step="10"
+					:ticks="{ size: 4 }" :thumb-label="true" class="mt-5">
 					<template v-slot:append>
 						<span>{{ localSpeed }}%</span>
 					</template>
 				</v-slider>
-				<v-row align="center" class="ml-2">
-					<span class="mr-2 label-color">Thema</span>
+				<v-row align="center" class="mt-1 ml-2">
+					<span class="mr-2 label-color">{{ $t('theme') }}</span>
 					<v-icon left class="ml-6 mr-2">mdi-weather-sunny</v-icon>
-					<v-switch v-model="localDarkTheme" class="mt-6" />
+					<v-switch v-model="localDarkTheme" />
 					<v-icon right class="ml-2">mdi-weather-night</v-icon>
 				</v-row>
 			</v-card-text>
 			<v-card-actions>
 				<v-spacer></v-spacer>
-				<v-btn text @click="closeDialog">Sluiten</v-btn>
+				<v-btn text @click="closeDialog">{{ $t('close') }}</v-btn>
 			</v-card-actions>
 		</v-card>
 	</v-dialog>
@@ -28,6 +29,8 @@
 
 <script>
 import { useTheme } from 'vuetify';
+import { useI18n } from 'vue-i18n';
+import LocalDatabaseService from '../services/LocalDatabaseService.js';
 
 export default {
 	name: 'SettingsDialog',
@@ -84,7 +87,7 @@ export default {
 	},
 	setup() {
 		const theme = useTheme();
-
+		useI18n();
 		return { theme };
 	},
 	watch: {
@@ -97,6 +100,8 @@ export default {
 				this.$emit('update:selectedVoice', this.localSelectedVoice);
 				this.$emit('update:language', this.localLanguage);
 				this.$emit('update:selectedSpeed', this.localSpeed);
+				this.$i18n.locale = this.mapLanguageToLocale(this.localLanguage);
+				LocalDatabaseService.save('language', this.localLanguage);
 			}
 		},
 		localDarkTheme(newVal) {
@@ -119,6 +124,21 @@ export default {
 	methods: {
 		closeDialog() {
 			this.localDialog = false;
+		},
+		mapLanguageToLocale(language) {
+			const mapping = {
+				'Nederlands': 'nl',
+				'English': 'en',
+				'Spanish': 'es',
+				'French': 'fr',
+				'German': 'de',
+				'Chinese': 'zh',
+				'Japanese': 'ja',
+				'Russian': 'ru',
+				'Italian': 'it',
+				'Portuguese': 'pt'
+			};
+			return mapping[language] || 'en';
 		}
 	}
 }

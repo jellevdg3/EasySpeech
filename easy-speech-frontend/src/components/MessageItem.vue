@@ -12,10 +12,10 @@
 				</template>
 				<v-list>
 					<v-list-item @click="openEditDialog">
-						<v-list-item-title>Bewerken</v-list-item-title>
+						<v-list-item-title>{{ $t('edit') }}</v-list-item-title>
 					</v-list-item>
 					<v-list-item @click="deleteMessage">
-						<v-list-item-title>Verwijderen</v-list-item-title>
+						<v-list-item-title>{{ $t('delete') }}</v-list-item-title>
 					</v-list-item>
 				</v-list>
 			</v-menu>
@@ -45,20 +45,20 @@
 				</template>
 			</v-card-text>
 
-			<!-- Edit Message Dialog -->
 			<v-dialog v-model="editDialog" max-width="600px">
 				<v-card>
 					<v-card-title>
-						<span class="headline">Bericht Bewerken</span>
+						<span class="headline">{{ $t('editMessage') }}</span>
 					</v-card-title>
 					<v-card-text>
-						<v-textarea v-model="editedText" :rules="[v => !!v || 'Bericht kan niet leeg zijn']"
-							label="Bericht" auto-grow></v-textarea>
+						<v-textarea v-model="editedText" :rules="[v => !!v || $t('typeMessage')]"
+							label="{{ $t('editMessage') }}" auto-grow></v-textarea>
 					</v-card-text>
 					<v-card-actions>
 						<v-spacer></v-spacer>
-						<v-btn color="blue darken-1" text @click="closeEditDialog">Annuleren</v-btn>
-						<v-btn color="blue darken-1" text @click="saveEdit" :disabled="!editedText">Opslaan</v-btn>
+						<v-btn color="blue darken-1" text @click="closeEditDialog">{{ $t('cancel') }}</v-btn>
+						<v-btn color="blue darken-1" text @click="saveEdit" :disabled="!editedText">{{ $t('save')
+							}}</v-btn>
 					</v-card-actions>
 				</v-card>
 			</v-dialog>
@@ -69,6 +69,7 @@
 <script>
 import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import MessageItemSpeech from './MessageItemSpeech.vue';
+import { useI18n } from 'vue-i18n';
 
 export default {
 	name: 'MessageItem',
@@ -132,6 +133,10 @@ export default {
 		sentences() {
 			return this.splitResult.sentences;
 		},
+	},
+	setup() {
+		const { t } = useI18n();
+		return { t };
 	},
 	methods: {
 		handleToggleSpeech(isPlaying) {
@@ -322,10 +327,8 @@ h6 {
 	transition: background-color 0.3s, box-shadow 0.3s;
 	color: black;
 	user-select: none;
-	/* Prevent text selection */
 }
 
-/* Apply hover styles only on devices that support hover */
 @media (hover: hover) {
 
 	.sentence:hover,
@@ -363,7 +366,5 @@ h6 {
 	padding: 0;
 }
 
-.space {
-	/* No additional styles to prevent highlighting */
-}
+.space {}
 </style>

@@ -8,6 +8,16 @@ import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import './style.css';
 import LocalDatabaseService from './services/LocalDatabaseService.js';
+import { createI18n } from 'vue-i18n';
+import { messages } from './locales.js';
+
+const systemLocale = navigator.language.split('-')[0];
+const savedLanguage = LocalDatabaseService.load('language') || (Object.prototype.hasOwnProperty.call(messages, systemLocale) ? systemLocale : 'en');
+
+const i18n = createI18n({
+	locale: savedLanguage,
+	messages,
+});
 
 const savedDarkTheme = LocalDatabaseService.load('darkTheme');
 let isDark = false;
@@ -63,4 +73,5 @@ const vuetify = createVuetify({
 const app = createApp(App);
 app.use(VueCookies);
 app.use(vuetify);
+app.use(i18n);
 app.mount('#app');
