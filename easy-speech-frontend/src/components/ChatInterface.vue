@@ -23,8 +23,8 @@
 
 		<v-main class="d-flex flex-column" style="min-height: 0;">
 			<v-container fluid class="d-flex flex-column flex-grow-1" style="padding: 0; min-height: 0;">
-				<MessageList ref="messageList" :messages="currentConversation?.messages || []"
-					class="message-list" @edit="handleEditMessage" @delete="handleDeleteMessage" />
+				<MessageList ref="messageList" :messages="currentConversation?.messages || []" class="message-list"
+					@edit="handleEditMessage" @delete="handleDeleteMessage" />
 				<MessageInput v-model="newMessage" @send="sendMessage" />
 				<SettingsDialog :dialog="dialog" @update:dialog="dialog = $event" :voices="voices"
 					:selectedVoice="selectedVoice" @update:selectedVoice="updateSelectedVoice($event)"
@@ -47,7 +47,6 @@ import SpeechSynthesisService from '../services/SpeechSynthesisService.js';
 import GuidUtils from '../utils/GuidUtils.js';
 import { useTheme } from 'vuetify';
 import { useI18n } from 'vue-i18n';
-import { messages as localeMessages } from '../locales.js';
 import { useDisplay } from 'vuetify';
 import { stripFormatting } from '../utils/TextUtils.js';
 
@@ -77,7 +76,7 @@ export default {
 		const drawer = ref(!isMobile.value);
 		const selectedConversationId = ref(null);
 
-		const languageMapping = {
+		const mapping = {
 			'Nederlands': 'nl',
 			'English': 'en',
 			'Spanish': 'es',
@@ -90,22 +89,13 @@ export default {
 			'Portuguese': 'pt'
 		};
 
-		const reverseLanguageMapping = Object.keys(languageMapping).reduce((acc, key) => {
-			acc[languageMapping[key]] = key;
-			return acc;
-		}, {});
-
 		const loadVoices = async () => {
 			voices.value = await SpeechSynthesisService.getVoicesList();
+
+			const currentLocale = locale.value;
+			const currentLanguageName = Object.keys(mapping).find(key => mapping[key] === currentLocale);
 			const savedVoice = LocalDatabaseService.load('selectedVoice');
-			const savedLanguageCode = LocalDatabaseService.load('language');
-			let savedLanguageName = reverseLanguageMapping[savedLanguageCode] || 'English';
-			const systemLocale = navigator.language.split('-')[0];
-			if (savedLanguageCode && Object.prototype.hasOwnProperty.call(localeMessages, savedLanguageCode)) {
-				savedLanguageName = reverseLanguageMapping[savedLanguageCode];
-			} else {
-				savedLanguageName = reverseLanguageMapping[Object.prototype.hasOwnProperty.call(localeMessages, systemLocale) ? systemLocale : 'en'];
-			}
+			const savedLanguageName = LocalDatabaseService.load('language') || currentLanguageName;
 			selectedLanguage.value = savedLanguageName;
 			locale.value = mapLanguageToLocale(savedLanguageName);
 			if (savedVoice && voices.value.includes(savedVoice)) {
@@ -278,9 +268,11 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 
 		const updateSelectedLanguage = (newLanguage) => {
 			selectedLanguage.value = newLanguage;
-			locale.value = mapLanguageToLocale(newLanguage);
+
+			const languageCode = mapLanguageToLocale(newLanguage);
+			locale.value = languageCode;
 			SpeechSynthesisService.setLanguage(newLanguage);
-			LocalDatabaseService.save('language', languageMapping[newLanguage]);
+			LocalDatabaseService.save('language', newLanguage);
 		};
 
 		const updateSelectedSpeed = (newSpeed) => {
@@ -311,18 +303,6 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		};
 
 		const mapLanguageToLocale = (language) => {
-			const mapping = {
-				'Nederlands': 'nl',
-				'English': 'en',
-				'Spanish': 'es',
-				'French': 'fr',
-				'German': 'de',
-				'Chinese': 'zh',
-				'Japanese': 'ja',
-				'Russian': 'ru',
-				'Italian': 'it',
-				'Portuguese': 'pt'
-			};
 			return mapping[language] || 'en';
 		};
 
@@ -334,7 +314,7 @@ Van dat moment af waren Bolt en de kat onafscheidelijk. Samen zwierven ze door d
 		});
 
 		watch(selectedLanguage, (newLang) => {
-			LocalDatabaseService.save('language', languageMapping[newLang]);
+			LocalDatabaseService.save('language', newLang);
 		});
 
 		watch(isMobile, (val) => {

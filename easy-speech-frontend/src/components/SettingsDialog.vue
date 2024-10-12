@@ -30,7 +30,6 @@
 <script>
 import { useTheme } from 'vuetify';
 import { useI18n } from 'vue-i18n';
-import LocalDatabaseService from '../services/LocalDatabaseService.js';
 
 export default {
 	name: 'SettingsDialog',
@@ -98,10 +97,7 @@ export default {
 			this.$emit('update:dialog', newVal);
 			if (!newVal) {
 				this.$emit('update:selectedVoice', this.localSelectedVoice);
-				this.$emit('update:language', this.localLanguage);
 				this.$emit('update:selectedSpeed', this.localSpeed);
-				this.$i18n.locale = this.mapLanguageToLocale(this.localLanguage);
-				LocalDatabaseService.save('language', this.localLanguage);
 			}
 		},
 		localDarkTheme(newVal) {
@@ -114,6 +110,9 @@ export default {
 		language(newVal) {
 			this.localLanguage = newVal;
 		},
+		localLanguage(newVal) {
+			this.$emit('update:language', newVal);
+		},
 		selectedSpeed(newVal) {
 			this.localSpeed = newVal;
 		},
@@ -124,21 +123,6 @@ export default {
 	methods: {
 		closeDialog() {
 			this.localDialog = false;
-		},
-		mapLanguageToLocale(language) {
-			const mapping = {
-				'Nederlands': 'nl',
-				'English': 'en',
-				'Spanish': 'es',
-				'French': 'fr',
-				'German': 'de',
-				'Chinese': 'zh',
-				'Japanese': 'ja',
-				'Russian': 'ru',
-				'Italian': 'it',
-				'Portuguese': 'pt'
-			};
-			return mapping[language] || 'en';
 		}
 	}
 }
